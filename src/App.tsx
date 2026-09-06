@@ -775,7 +775,28 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-[#07090e] text-slate-200 font-sans overflow-hidden">
       
-      {/* Top Glass Cockpit Avionics Header */}
+      {/* Mobile Top Avionics Bar */}
+      <header className="h-11 border-b border-white/10 flex md:hidden items-center justify-between px-3.5 glass-panel shrink-0 z-20 shadow-lg">
+        <div className="flex items-center gap-2">
+          <Plane className="w-4 h-4 text-cyan-400 rotate-45" />
+          <span className="font-mono text-xs font-black tracking-wider text-white">SKYPULSE</span>
+          <span className="text-[9px] px-1 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-extrabold">LIVE</span>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[10px] font-mono text-slate-400 font-bold">{flights.length.toLocaleString()} AIRCRAFT</span>
+          <a
+            href="https://naufal.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] font-mono font-black text-cyan-300 hover:text-white flex items-center gap-1 underline underline-offset-2"
+          >
+            <span>NAUFAL.IN</span>
+            <ExternalLink className="w-2.5 h-2.5" />
+          </a>
+        </div>
+      </header>
+
+      {/* Top Glass Cockpit Avionics Header (Desktop) */}
       <header className="h-14 border-b border-white/10 flex items-center justify-between px-4 md:px-6 glass-panel shrink-0 z-20 hidden md:flex shadow-2xl">
         <div className="flex items-center gap-3">
           <div className="p-1.5 bg-blue-600/30 border border-blue-400/50 rounded-xl shadow-lg shadow-blue-500/20">
@@ -964,6 +985,16 @@ export default function App() {
           <span>OPENSKY NETWORK REAL-TIME AIRSPACE</span>
           <span>•</span>
           <span className="text-cyan-400">SKYPULSE GLASS COCKPIT</span>
+          <span>•</span>
+          <a 
+            href="https://naufal.in" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-cyan-300 hover:text-white transition-colors underline underline-offset-2 flex items-center gap-1 font-black"
+          >
+            <span>NAUFAL.IN</span>
+            <ExternalLink className="w-3 h-3 text-cyan-300" />
+          </a>
         </div>
       </footer>
 

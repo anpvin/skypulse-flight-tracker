@@ -57,6 +57,8 @@ export function RadarTab({
   const [showQuickSearch, setShowQuickSearch] = useState(false);
   const [radarSearchQuery, setRadarSearchQuery] = useState("");
   const [showAltitudeLegend, setShowAltitudeLegend] = useState(true);
+  const [isEmergencyHidden, setIsEmergencyHidden] = useState(false);
+  const [isEmergencyMinimized, setIsEmergencyMinimized] = useState(false);
 
   // Reset to minimized whenever a new flight is selected
   useEffect(() => {
@@ -96,17 +98,85 @@ export function RadarTab({
       {/* Underlying Leaflet Map Engine */}
       <div ref={mapContainerRef} className="w-full h-full absolute inset-0 z-0 bg-[#07090e]" />
 
-      {/* Live Squawk 7700 / 7600 Emergency Alert Beacon */}
+      {/* Live Squawk 7700 / 7600 Emergency Alert Beacon (Moved Down & Compact with Hide/Open toggle to never block top category pills) */}
       {emergencyFlights.length > 0 && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 bg-red-600/90 border border-red-400 text-white font-mono text-xs font-black rounded-full shadow-[0_0_25px_rgba(239,68,68,0.8)] animate-pulse">
-          <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-          <span>EMERGENCY SQUAWK {emergencyFlights[0].squawk} DETECTED: {emergencyFlights[0].flight_iata || emergencyFlights[0].hex}</span>
-          <button
-            onClick={() => onSelectFlight && onSelectFlight(emergencyFlights[0])}
-            className="ml-2 px-2.5 py-0.5 bg-black text-white text-[10px] rounded-full hover:bg-white hover:text-black cursor-pointer uppercase transition-colors"
-          >
-            INTERCEPT
-          </button>
+        <div className="absolute bottom-24 md:bottom-28 left-4 z-30 font-mono pointer-events-auto">
+          {isEmergencyHidden ? (
+            /* Compact Open / Restore Button when Hidden */
+            <button
+              onClick={() => setIsEmergencyHidden(false)}
+              className="px-3 py-1.5 bg-red-600/90 hover:bg-red-500 border border-red-400 text-white text-[10px] font-black rounded-full shadow-[0_0_15px_rgba(239,68,68,0.7)] flex items-center gap-1.5 cursor-pointer transition-all animate-pulse"
+              title="Open Emergency Squawk Alert"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-white" />
+              <span>SQUAWK ALERT ({emergencyFlights.length})</span>
+              <span className="text-[9px] bg-black/40 px-1.5 py-0.5 rounded font-mono">OPEN</span>
+            </button>
+          ) : isEmergencyMinimized ? (
+            /* Compact Minimized Alert */
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-600/95 border border-red-400 text-white text-xs font-bold rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.7)] animate-pulse backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+              <span className="font-mono text-[11px] font-black">EMERGENCY {emergencyFlights[0].squawk}</span>
+              <button
+                onClick={() => onSelectFlight && onSelectFlight(emergencyFlights[0])}
+                className="px-2 py-0.5 bg-black text-white text-[9px] font-bold rounded hover:bg-white hover:text-black cursor-pointer uppercase transition-colors"
+              >
+                INTERCEPT
+              </button>
+              <button
+                onClick={() => setIsEmergencyMinimized(false)}
+                className="p-1 hover:bg-white/20 rounded cursor-pointer"
+                title="Expand details"
+              >
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setIsEmergencyHidden(true)}
+                className="p-1 hover:bg-white/20 rounded cursor-pointer"
+                title="Hide alert"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            /* Full Sleek Emergency Alert Card */
+            <div className="flex items-center gap-2.5 px-3.5 py-2 bg-red-950/90 border border-red-500/80 text-white text-xs font-bold rounded-2xl shadow-[0_0_25px_rgba(239,68,68,0.6)] backdrop-blur-md max-w-sm">
+              <div className="p-1.5 bg-red-600 rounded-xl animate-pulse">
+                <ShieldAlert className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5 text-[10px] font-black text-red-300 uppercase tracking-wide">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
+                  <span>SQUAWK {emergencyFlights[0].squawk} DETECTED</span>
+                </div>
+                <div className="text-[11px] font-mono text-white font-extrabold truncate max-w-[170px]">
+                  {emergencyFlights[0].flight_iata || emergencyFlights[0].flight_number || emergencyFlights[0].hex} • {emergencyFlights[0].aircraft_model || emergencyFlights[0].aircraft_type || "AIRCRAFT"}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 ml-auto">
+                <button
+                  onClick={() => onSelectFlight && onSelectFlight(emergencyFlights[0])}
+                  className="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black rounded-lg cursor-pointer uppercase transition-colors shadow"
+                >
+                  INTERCEPT
+                </button>
+                <button
+                  onClick={() => setIsEmergencyMinimized(true)}
+                  className="p-1 text-red-300 hover:text-white hover:bg-red-900/50 rounded-lg cursor-pointer"
+                  title="Minimize"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setIsEmergencyHidden(true)}
+                  className="p-1 text-red-300 hover:text-white hover:bg-red-900/50 rounded-lg cursor-pointer"
+                  title="Hide"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
