@@ -807,3 +807,209 @@ export function downloadFlightDossier(flight: Flight, details: any): void {
   URL.revokeObjectURL(url);
 }
 
+// Military Aircraft Database
+export const militaryAircraftMap: Record<string, { name: string; role: string; topSpeedMach: number; ceilingFt: number; weaponsHardpoints: number; stealthClass: string; manufacturer: string }> = {
+  F35: { name: "Lockheed Martin F-35 Lightning II", role: "5th Gen Stealth Multirole Fighter", topSpeedMach: 1.6, ceilingFt: 50000, weaponsHardpoints: 6, stealthClass: "Very Low Observable (VLO)", manufacturer: "Lockheed Martin" },
+  F22: { name: "Lockheed Martin F-22 Raptor", role: "5th Gen Air Dominance Stealth Fighter", topSpeedMach: 2.25, ceilingFt: 65000, weaponsHardpoints: 8, stealthClass: "Extreme Stealth VLO", manufacturer: "Lockheed Martin / Boeing" },
+  EF2000: { name: "Eurofighter Typhoon", role: "4.5 Gen Swing-Role Fighter", topSpeedMach: 2.0, ceilingFt: 65000, weaponsHardpoints: 13, stealthClass: "Reduced Radar Cross-Section", manufacturer: "Eurofighter Jagdflugzeug" },
+  RAFALE: { name: "Dassault Rafale C/M", role: "Omnirole Combat Aircraft", topSpeedMach: 1.8, ceilingFt: 52000, weaponsHardpoints: 14, stealthClass: "Reduced Observable", manufacturer: "Dassault Aviation" },
+  SU57: { name: "Sukhoi Su-57 Felon", role: "5th Gen Stealth Multirole Fighter", topSpeedMach: 2.0, ceilingFt: 66000, weaponsHardpoints: 10, stealthClass: "Low Observable", manufacturer: "Sukhoi" },
+  B2: { name: "Northrop Grumman B-2 Spirit", role: "Low-Observable Stealth Strategic Heavy Bomber", topSpeedMach: 0.95, ceilingFt: 50000, weaponsHardpoints: 2, stealthClass: "Ultra-Stealth Flying Wing", manufacturer: "Northrop Grumman" },
+  B52H: { name: "Boeing B-52H Stratofortress", role: "Long-Range Heavy Strategic Bomber", topSpeedMach: 0.84, ceilingFt: 50000, weaponsHardpoints: 8, stealthClass: "Non-Stealth Strategic", manufacturer: "Boeing" },
+  C17: { name: "Boeing C-17 Globemaster III", role: "Strategic & Tactical Heavy Airlifter", topSpeedMach: 0.76, ceilingFt: 45000, weaponsHardpoints: 0, stealthClass: "Transport", manufacturer: "Boeing" },
+  C130: { name: "Lockheed Martin C-130J Super Hercules", role: "Tactical Military Airlifter / Special Ops", topSpeedMach: 0.59, ceilingFt: 28000, weaponsHardpoints: 0, stealthClass: "Transport Turboprop", manufacturer: "Lockheed Martin" },
+  A400M: { name: "Airbus A400M Atlas", role: "Strategic / Tactical Turboprop Military Transport", topSpeedMach: 0.72, ceilingFt: 40000, weaponsHardpoints: 0, stealthClass: "Transport", manufacturer: "Airbus Defence and Space" },
+  KC135: { name: "Boeing KC-135 Stratotanker", role: "Aerial Refueling & Strategic Tanker", topSpeedMach: 0.80, ceilingFt: 50000, weaponsHardpoints: 0, stealthClass: "Tanker", manufacturer: "Boeing" },
+  E3: { name: "Boeing E-3 Sentry (AWACS)", role: "Airborne Early Warning & Control Radar", topSpeedMach: 0.78, ceilingFt: 42000, weaponsHardpoints: 0, stealthClass: "Surveillance / Command", manufacturer: "Boeing" },
+  RQ4: { name: "Northrop Grumman RQ-4 Global Hawk", role: "High-Altitude Long-Endurance (HALE) UAV Drone", topSpeedMach: 0.52, ceilingFt: 60000, weaponsHardpoints: 0, stealthClass: "Unmanned Reconnaissance", manufacturer: "Northrop Grumman" },
+  MQ9: { name: "General Atomics MQ-9 Reaper", role: "Remotely Piloted Combat Drone (RPAS)", topSpeedMach: 0.40, ceilingFt: 50000, weaponsHardpoints: 4, stealthClass: "Unmanned Hunter-Killer", manufacturer: "General Atomics" },
+  F16: { name: "General Dynamics F-16 Fighting Falcon", role: "Single-Engine Multirole Supersonic Fighter", topSpeedMach: 2.05, ceilingFt: 50000, weaponsHardpoints: 9, stealthClass: "Standard", manufacturer: "Lockheed Martin" },
+  F15E: { name: "McDonnell Douglas F-15E Strike Eagle", role: "All-Weather Strike / Air Superiority Fighter", topSpeedMach: 2.5, ceilingFt: 60000, weaponsHardpoints: 11, stealthClass: "Standard", manufacturer: "Boeing" }
+};
+
+// Helicopter & Rotorcraft Database
+export const helicopterAircraftMap: Record<string, { name: string; role: string; topSpeedKnots: number; ceilingFt: number; rotorDiameterFt: number; medevacBeds: number; manufacturer: string }> = {
+  H145: { name: "Airbus Helicopters H145 / BK117 D-3", role: "Emergency Medical Services (HEMS) & SAR", topSpeedKnots: 145, ceilingFt: 17500, rotorDiameterFt: 36.1, medevacBeds: 2, manufacturer: "Airbus Helicopters" },
+  EC135: { name: "Airbus Helicopters EC135 / H135", role: "Police Aviation & Air Ambulance", topSpeedKnots: 140, ceilingFt: 20000, rotorDiameterFt: 33.5, medevacBeds: 1, manufacturer: "Airbus Helicopters" },
+  S92: { name: "Sikorsky S-92 Helibus", role: "Offshore Oilfield & VIP Transport", topSpeedKnots: 165, ceilingFt: 15000, rotorDiameterFt: 56.3, medevacBeds: 3, manufacturer: "Sikorsky Aircraft" },
+  AW139: { name: "Leonardo AW139", role: "Search and Rescue (SAR) & Maritime Patrol", topSpeedKnots: 167, ceilingFt: 20000, rotorDiameterFt: 45.3, medevacBeds: 2, manufacturer: "Leonardo" },
+  AH64: { name: "Boeing AH-64E Apache Guardian", role: "Heavy Attack Helicopter / Gunship", topSpeedKnots: 158, ceilingFt: 20000, rotorDiameterFt: 48.0, medevacBeds: 0, manufacturer: "Boeing" },
+  UH60: { name: "Sikorsky UH-60M Black Hawk", role: "Tactical Utility / Combat Assault Helicopter", topSpeedKnots: 159, ceilingFt: 19000, rotorDiameterFt: 53.7, medevacBeds: 6, manufacturer: "Sikorsky Aircraft" },
+  CH47: { name: "Boeing CH-47F Chinook", role: "Tandem-Rotor Heavy-Lift Cargo Transport", topSpeedKnots: 170, ceilingFt: 20000, rotorDiameterFt: 60.0, medevacBeds: 24, manufacturer: "Boeing" },
+  V22: { name: "Bell Boeing V-22 Osprey", role: "Tiltrotor Strategic High-Speed Transport", topSpeedKnots: 270, ceilingFt: 25000, rotorDiameterFt: 38.0, medevacBeds: 12, manufacturer: "Bell Boeing" },
+  B407: { name: "Bell 407 GXi", role: "Air Ambulance & Law Enforcement Patrol", topSpeedKnots: 133, ceilingFt: 18690, rotorDiameterFt: 35.0, medevacBeds: 1, manufacturer: "Bell Textron" },
+  H125: { name: "Airbus Helicopters H125 Écureuil", role: "High-Altitude Aerial Work & Utility", topSpeedKnots: 140, ceilingFt: 23000, rotorDiameterFt: 35.1, medevacBeds: 1, manufacturer: "Airbus Helicopters" },
+  KA52: { name: "Kamov Ka-52 Alligator", role: "Coaxial Rotor Reconnaissance / Attack Helicopter", topSpeedKnots: 162, ceilingFt: 18000, rotorDiameterFt: 47.6, medevacBeds: 0, manufacturer: "Russian Helicopters" }
+};
+
+// Cargo Carriers
+export const cargoAirlines: Record<string, { name: string; callsign: string; hub: string }> = {
+  FDX: { name: "FedEx Express Cargo", callsign: "FEDEX", hub: "MEM" },
+  UPS: { name: "UPS Airlines Worldwide", callsign: "UPS", hub: "SDF" },
+  DHL: { name: "DHL Aviation Express", callsign: "DHL", hub: "LEJ" },
+  GTI: { name: "Atlas Air Heavy Cargo", callsign: "GIANT", hub: "CVG" },
+  CLX: { name: "Cargolux International", callsign: "CARGOLUX", hub: "LUX" },
+  VDA: { name: "Volga-Dnepr Heavy Transport", callsign: "VOLGA", hub: "ULV" },
+  SQC: { name: "Singapore Airlines Cargo", callsign: "SINGCARGO", hub: "SIN" },
+  PAC: { name: "Polar Air Cargo", callsign: "POLAR", hub: "ANC" },
+  CKK: { name: "China Cargo Airlines", callsign: "CARGO KING", hub: "PVG" }
+};
+
+// Military Operators
+export const militaryOperators: Record<string, { name: string; branch: string; country: string }> = {
+  USAF: { name: "United States Air Force", branch: "Air Force", country: "United States" },
+  USN: { name: "United States Navy Aviation", branch: "Navy", country: "United States" },
+  RAF: { name: "Royal Air Force", branch: "Air Force", country: "United Kingdom" },
+  GAF: { name: "German Air Force (Luftwaffe)", branch: "Air Force", country: "Germany" },
+  FAF: { name: "French Air and Space Force", branch: "Air Force", country: "France" },
+  IAF: { name: "Indian Air Force", branch: "Air Force", country: "India" },
+  RAAF: { name: "Royal Australian Air Force", branch: "Air Force", country: "Australia" },
+  JASDF: { name: "Japan Air Self-Defense Force", branch: "Air Force", country: "Japan" },
+  NATO: { name: "NATO Strategic Command", branch: "Allied Command", country: "International" }
+};
+
+// Generate authentic runway data for any airport
+export function getAirportRunways(airport: AirportInfo): AirportRunway[] {
+  if (airport.runwaysDetail && airport.runwaysDetail.length > 0) {
+    return airport.runwaysDetail;
+  }
+  const primaryHdg = Math.abs(Math.round(airport.lat * 7 + airport.lng * 3)) % 18;
+  const hdg1 = (primaryHdg * 10) || 90;
+  const hdg2 = (hdg1 + 180) % 360;
+  const id1 = String(Math.round(hdg1 / 10)).padStart(2, '0');
+  const id2 = String(Math.round(hdg2 / 10)).padStart(2, '0');
+
+  return [
+    {
+      identifier: `${id1}L/${id2}R`,
+      lengthFt: 11500 + (Math.abs(Math.round(airport.lat * 10)) % 3000),
+      widthFt: 150,
+      surface: "Grooved Concrete",
+      ilsFreq: `110.${15 + (Math.abs(Math.round(airport.lat)) % 80)} MHz`,
+      headingDeg: hdg1
+    },
+    {
+      identifier: `${id1}R/${id2}L`,
+      lengthFt: 9800 + (Math.abs(Math.round(airport.lng * 10)) % 2500),
+      widthFt: 150,
+      surface: "Asphalt",
+      ilsFreq: `109.${25 + (Math.abs(Math.round(airport.lng)) % 70)} MHz`,
+      headingDeg: hdg1
+    }
+  ];
+}
+
+// Generate realistic airport radio frequencies
+export function getAirportFrequencies(airport: AirportInfo): AirportFrequency[] {
+  if (airport.frequencies && airport.frequencies.length > 0) {
+    return airport.frequencies;
+  }
+  const base = 118 + (Math.abs(Math.round(airport.lat * 5)) % 15);
+  return [
+    { type: "TWR", freqMhz: `${base}.700`, name: `${airport.city} Tower` },
+    { type: "GND", freqMhz: `${base}.900`, name: `${airport.city} Ground Control` },
+    { type: "APP", freqMhz: `${base + 3}.450`, name: `${airport.city} Radar Approach` },
+    { type: "DEP", freqMhz: `${base + 2}.850`, name: `${airport.city} Radar Departure` },
+    { type: "ATIS", freqMhz: `${base - 2}.250`, name: `${airport.city} ATIS Weather Info` },
+    { type: "DEL", freqMhz: `${base}.150`, name: `${airport.city} Clearance Delivery` }
+  ];
+}
+
+// Generate Flightradar24-style Live Arrivals & Departures Board
+export function generateMockFlightBoard(iata: string): { departures: any[]; arrivals: any[] } {
+  const airport = globalAirports[iata] || { city: iata, country: "International" };
+  const codes = Object.keys(globalAirports).filter(c => c !== iata);
+  const airlineKeys = Object.keys(majorAirlines).filter(k => k.length === 3);
+
+  const departures: any[] = [];
+  const arrivals: any[] = [];
+
+  const statuses = ["BOARDING", "TAXIING", "DEPARTED", "EN ROUTE", "ON TIME", "DELAYED (15m)", "FINAL CALL"];
+  const arrStatuses = ["LANDED", "APPROACHING", "ON SCHEDULE", "DELAYED", "BAGGAGE CLAIM", "ESTIMATED"];
+
+  for (let i = 0; i < 15; i++) {
+    const destCode = codes[(i * 11 + 3) % codes.length];
+    const origCode = codes[(i * 17 + 7) % codes.length];
+    const dest = globalAirports[destCode];
+    const orig = globalAirports[origCode];
+    const airline = majorAirlines[airlineKeys[(i * 5) % airlineKeys.length]] || { name: "Global Airways", iata: "GA" };
+
+    const depHour = (8 + Math.floor(i * 1.1)) % 24;
+    const depMin = (i * 18) % 60;
+    const arrHour = (depHour + 2 + (i % 8)) % 24;
+    const arrMin = (depMin + 25) % 60;
+
+    departures.push({
+      flightNumber: `${airline.iata || "SK"}${200 + i * 14}`,
+      airline: airline.name,
+      destinationIata: destCode,
+      destinationCity: dest?.city || "Destination",
+      destinationAirport: dest?.name || `${destCode} Airport`,
+      scheduledTime: `${String(depHour).padStart(2, '0')}:${String(depMin).padStart(2, '0')}`,
+      status: statuses[i % statuses.length],
+      gate: `G${(i % 24) + 1}`,
+      terminal: `T${(i % 3) + 1}`,
+      aircraft: i % 2 === 0 ? "B77W (Boeing 777-300ER)" : "A359 (Airbus A350-900)"
+    });
+
+    arrivals.push({
+      flightNumber: `${airline.iata || "SK"}${300 + i * 19}`,
+      airline: airline.name,
+      originIata: origCode,
+      originCity: orig?.city || "Origin",
+      originAirport: orig?.name || `${origCode} Airport`,
+      scheduledTime: `${String(arrHour).padStart(2, '0')}:${String(arrMin).padStart(2, '0')}`,
+      status: arrStatuses[i % arrStatuses.length],
+      gate: `G${((i + 12) % 24) + 1}`,
+      terminal: `T${((i + 1) % 3) + 1}`,
+      aircraft: i % 3 === 0 ? "A388 (Airbus A380)" : "B789 (Dreamliner)"
+    });
+  }
+
+  return { departures, arrivals };
+}
+
+// Cockpit Audio Synthesizer (Web Audio API)
+let audioCtx: AudioContext | null = null;
+let activeEngineNode: OscillatorNode | null = null;
+let activeGainNode: GainNode | null = null;
+
+export function playCockpitSound(type: "engine_jet" | "engine_rotor" | "tcas_alert" | "chime" | "autopilot", mute: boolean = false): void {
+  if (mute || typeof window === "undefined") return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!audioCtx) audioCtx = new AudioContextClass();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+
+    if (type === "chime") {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.2);
+    } else if (type === "tcas_alert") {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(400, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.4);
+    }
+  } catch (e) {
+    // Audio context gracefully ignored if permissions restricted
+  }
+}
+
+

@@ -187,16 +187,21 @@ export function BriefingTab({
                 >
                   ← FLIGHT BOARD
                 </button>
+                {onOpen3DCockpit && (
+                  <button
+                    onClick={() => onOpen3DCockpit(selectedFlight)}
+                    className="px-4 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black text-[10px] flex items-center gap-1.5 transition-all cursor-pointer uppercase shadow-lg shadow-cyan-500/30"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>3D COCKPIT SIMULATOR</span>
+                  </button>
+                )}
                 <button
-                  onClick={() => {
-                    const fl = Math.round((selectedFlight.alt || 30000) / 100);
-                    const callsign = selectedFlight.flight_iata || selectedFlight.hex;
-                    speakAtcRadio(`${callsign}, climb and maintain Flight Level ${fl}, heading ${selectedFlight.dir || 90} degrees. Altimeter 29.92.`);
-                  }}
+                  onClick={() => speakAtcRadio(`${selectedFlight.flight_iata || selectedFlight.hex}, climb and maintain Flight Level ${Math.round((selectedFlight.alt || 30000) / 100)}, heading ${selectedFlight.dir || 90} degrees. Altimeter 29.92.`)}
                   className="px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/60 text-emerald-300 hover:text-white rounded-xl font-extrabold text-[10px] flex items-center gap-1.5 transition-colors cursor-pointer uppercase border border-emerald-500/40 shadow-lg shadow-emerald-500/10"
-                  title="Speak Simulated Radio Clearance"
+                  title="Speak synthesized ATC clearance"
                 >
-                  <Volume2 className="w-3.5 h-3.5" />
+                  <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>PLAY RADIO CLEARANCE</span>
                 </button>
                 <button

@@ -27,8 +27,39 @@
 
 ## 🌟 Key Features
 
-### 📡 1. Tactical Live Flight Radar
-- **10,000+ Active Transponders**: Live worldwide Mode-S ADS-B telemetry stream refreshed continuously.
+### 🎮 1. Real-Time 3D Cockpit & Flight Simulator (Flightradar24-Grade)
+- **First-Person Pilot POV**: Step inside the virtual cockpit with authentic glass HUD, pitch ladder, roll pointer, and artificial horizon.
+- **Multiple Camera Perspectives**: Cockpit Pilot POV, 3D Orbital Chase Cam, Right Wing Cam, and Top Overhead Satellite View.
+- **Parametric 3D Aircraft Models**: Tailored dynamic 3D airframes for Supersonic Fighter Jets (delta wings & afterburners), Helicopters (rotating multi-blade rotor disc), Heavy 4-Engine Cargo/Widebodies, and Twin-Jet Airliners.
+- **Procedural Sky & Clouds**: Dynamic atmospheric cloud layers and depth-calibrated ground grids reacting to flight altitude.
+- **Web Audio Sound Effects Synthesizer**: Realistic turbofan jet engine spool, helicopter rotor blade chop, and altitude chime alerts with instant mute control.
+- **Interactive Control Deck**: Dynamic thrust throttle, rudder trim, and flight telemetry HUD overlays.
+
+### ⚔️ 2. Worldwide Military Aircraft & Air Defense Fleet
+- **Global Sorties & Combat Air Patrols**: Real-time tracking of tactical military sorties across NATO, USAF, RAF, Luftwaffe, JASDF, RAAF, and international armed forces.
+- **Supersonic Interceptors & Stealth**: Lockheed Martin F-35 Lightning II, F-22 Raptor, Eurofighter Typhoon, B-2 Spirit Stealth Bomber, Sukhoi Su-57.
+- **Heavy Transports & Aerial Tankers**: Boeing C-17 Globemaster III, KC-135 Stratotanker, Lockheed C-130 Hercules.
+- **Airborne Early Warning & Drones**: E-3 Sentry AWACS radar domes and Northrop Grumman RQ-4 Global Hawk high-altitude drones.
+- **Distinct Red Tactical Radar Silhouettes**: Custom delta-wing military SVG markers with tactical afterburner indicators on the live map.
+
+### 🚁 3. Helicopters, Air Ambulance & Search & Rescue (SAR)
+- **Emergency EMS & Air Rescue**: HEMS life-flight helicopters, police patrols, and Coast Guard Search & Rescue missions.
+- **Military & Heavy Lift Rotorcraft**: Sikorsky UH-60 Black Hawk, AH-64 Apache, CH-47 Chinook, Boeing V-22 Osprey tiltrotor, Airbus H145 / EC135, Sikorsky S-92.
+- **Custom Emerald Rotor Silhouette**: Animated 4-blade spinning rotor SVG marker representation on the tactical radar.
+
+### 📦 4. Global Heavy Cargo & VIP Business Aviation
+- **Air Freight Giants**: FedEx Express, UPS Airlines, DHL Aviation, Atlas Air, Amazon Air, Cargolux, Emirates SkyCargo.
+- **Ultra-Long-Range Private Jets**: Gulfstream G650ER, Bombardier Global 7500, Dassault Falcon 8X, Cessna Citation X.
+- **Dedicated Category Radar Filter Bar**: One-click instant filtering for `ALL FLEET`, `COMMERCIAL`, `⚔️ MILITARY`, `🚁 HELICOPTERS`, `📦 CARGO`, and `✈️ VIP GA`.
+
+### 🏢 5. Worldwide Airport Hub Center & Live Flight Boards
+- **300+ International Aerodromes**: Comprehensive database covering hubs across the Americas, Europe, Asia, Middle East, Africa, and Oceania.
+- **Live Flightradar24-Style Arrivals & Departures**: Dynamic real-time flight boards with active flight codes, origin/destination cities, scheduled times, and status tags (*On Time, Approaching, Boarding, Airborne*).
+- **Runway Diagram Layouts**: Detailed runway dimensions, surface types (Asphalt / Concrete), and magnetic orientations (e.g., `04L/22R`, `13L/31R`).
+- **Aeronautical Radio Frequencies**: Complete ATC communications breakdown including Tower, Ground, Approach, Departure, ATIS, and ILS frequencies.
+
+### 📡 6. Tactical Live Flight Radar
+- **4,000+ Active Transponders**: Live worldwide Mode-S ADS-B telemetry stream refreshed continuously.
 - **Dynamic Viewport Streaming**: Automatically loads and renders 100% of aircraft in view whenever you pan or zoom into any city, country, or region.
 - **Altitude-Band Color Silhouettes**:
   - 🟣 **Stratosphere (FL390+)**: Neon Purple (`#a855f7`)
@@ -43,33 +74,27 @@
 - **Autopilot Follow Camera**: Locks camera tracking onto any selected aircraft in flight.
 - **60 FPS Dead-Reckoning**: Smooth mathematical interpolation loop for realistic heading rotation and position advances between API polling intervals.
 
-### 🎙️ 2. Live ATC Radio & Voice Synthesizer Deck
+### 🎙️ 7. Live ATC Radio & Voice Synthesizer Deck
 - **Web Speech API Voice Synthesizer**: Generates and speaks realistic ICAO phraseology radio clearances for any active flight with one click.
 - **VHF Frequency Tuner**: Switch between Center Control (124.500 MHz), High-Altitude Oceanic (128.850 MHz), Approach Radar (119.700 MHz), Tower (118.700 MHz), and Ground Ops (121.900 MHz).
 - **TCAS Conflict Monitor**: Real-time Traffic Alert and Collision Avoidance System calculating separation minimums and altitude deltas.
 - **Emergency Squawk Monitor**: Live scanner for Squawk 7700 (General Emergency), 7600 (Radio Comm Failure), and 7500 (Unlawful Interference).
 
-### 🏢 3. 300+ Global International Airport Hubs Explorer
-- **Worldwide Hubs Browser**: Comprehensive directory of over 300 major international aerodromes across all continents.
-- **Live Airport Traffic**: Real-time active departure and arrival counts computed dynamically from global flights.
-- **NOAA METAR Weather**: Live decoded surface observations including temperature, cloud ceilings, barometric QNH, and wind vectors.
-- **One-Click Radar Jump**: Center radar camera instantly over any international airport.
-
-### 🛩️ 4. Glass Cockpit Primary Flight Display (PFD)
+### 🛩️ 8. Glass Cockpit Primary Flight Display (PFD)
 - **Artificial Horizon**: Real-time Pitch and Roll attitude indicator dynamically reacting to climb/descent rates and turns.
 - **Avionics Tapes**: Barometric Altitude Tape (`ft` & `FL`), Airspeed Tape (`km/h` & `knots`), and Vertical Speed Indicator (`FPM`).
 - **Atmospheric Physics**: ISA Mach Number estimator ($M = \frac{v}{a(T)}$) and Barometric Pressure calculation (`hPa` and `inHg`).
 - **Geodesic Great-Circle Route Arcs**: Calculates and draws authentic Earth-curvature route paths, flight progress percentages, distance traveled, and distance remaining.
 - **Flight Dossier Export**: One-click download of complete JSON flight dossier including telemetry, routing, weather, and aircraft specifications.
 
-### 📋 5. Real-Time Flight Board & Search Engine
+### 📋 9. Real-Time Flight Board & Search Engine
 - **Card View & Dense Table View**: Switch seamlessly between interactive telemetry cards and high-density tabular flight boards.
-- **Multi-Field Search**: Search by Flight Number (e.g. `UAE201`), ICAO Callsign, Hex Code, Airline Name, Origin/Destination City, or Aircraft Model.
-- **Status Filter Chips**: Quick filtering for High Cruise (FL350+), Climbing, Descending, and Ground operations.
+- **Multi-Field Search**: Search by Flight Number (e.g. `VIPER11`, `UAE201`), ICAO Callsign, Hex Code, Airline Name, Origin/Destination City, or Aircraft Model.
+- **Category & Status Filter Chips**: Quick filtering for Commercial, Military, Helicopters, Cargo, VIP GA, High Cruise (FL350+), Climbing, Descending, and Ground operations.
 - **Regional Filters**: Fast filtering across North America, Europe, Asia / Middle East, Latin America, and Oceania.
 - **Multi-Parameter Sorting**: Sort live lists by Altitude, Ground Speed, Route Progress %, or Flight Number.
 
-### 📊 6. Airspace Spectrum Analytics
+### 📊 10. Airspace Spectrum Analytics
 - **Live Fleet KPIs**: Active transponder count, global average cruise level, peak velocity, and top airline carrier.
 - **Visual Analytics**: Interactive Recharts graphs displaying carrier distribution, altitude layer histograms, and speed spectrums.
 

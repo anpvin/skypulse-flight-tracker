@@ -52,21 +52,63 @@ function getVectorPoint(lat: number, lng: number, headingDeg: number, distanceKm
   return [deg(lat2), deg(lon2)];
 }
 
-// Custom Plane Marker generator with Altitude Band Coloring and Authentic Silhouette
+import { Cockpit3DModal } from "./components/Cockpit3DModal";
+import { AircraftCategory } from "./types";
+
+// Custom Plane Marker generator with Multi-Category Silhouette & Altitude Band Coloring
 function createPlaneIcon(flight: any, rotation: number, isSelected: boolean) {
   const classification = getAircraftClassification(flight);
   const altColor = getAltitudeColor(flight.alt || 30000);
-  const size = isSelected ? Math.max(28, classification.selectedSize) : classification.baseSize;
-  const fillColor = isSelected ? "#00f0ff" : altColor.hex;
+  const size = isSelected ? Math.max(30, classification.selectedSize + 4) : classification.baseSize;
+  const isMilitary = flight.category === "military" || flight.aircraft_type === "F35" || flight.aircraft_type === "F22" || flight.aircraft_type === "EF2000" || flight.aircraft_type === "B2";
+  const isHelicopter = flight.category === "helicopter" || flight.aircraft_type === "H145" || flight.aircraft_type === "EC135" || flight.aircraft_type === "UH60" || flight.aircraft_type === "AH64";
+  const isCargo = flight.category === "cargo";
+  const isGA = flight.category === "general_aviation";
+
+  const fillColor = isSelected 
+    ? "#00f0ff" 
+    : isMilitary 
+    ? "#f43f5e" 
+    : isHelicopter 
+    ? "#10b981" 
+    : isCargo 
+    ? "#f59e0b" 
+    : isGA 
+    ? "#a855f7" 
+    : altColor.hex;
+
   const strokeColor = isSelected ? "#ffffff" : "#07090e";
   const glow = isSelected 
-    ? "drop-shadow(0 0 14px rgba(0,240,255,1)) drop-shadow(0 0 4px rgba(255,255,255,0.9))" 
+    ? "drop-shadow(0 0 16px rgba(0,240,255,1)) drop-shadow(0 0 4px rgba(255,255,255,0.9))" 
+    : isMilitary
+    ? "drop-shadow(0 0 8px rgba(244,63,94,0.9)) drop-shadow(0 0 2px rgba(0,0,0,0.9))"
+    : isHelicopter
+    ? "drop-shadow(0 0 8px rgba(16,185,129,0.9)) drop-shadow(0 0 2px rgba(0,0,0,0.9))"
     : `drop-shadow(0 0 5px ${altColor.hex}99) drop-shadow(0 0 2px rgba(0,0,0,0.9))`;
 
   let svgContent = "";
 
-  if (classification.category === "4-engine") {
-    // 4-Engine Heavy Widebody (A380 / B747)
+  if (isMilitary) {
+    // Delta-Wing Supersonic Fighter / Stealth Bomber Silhouette
+    svgContent = `
+      <svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="${fillColor}" stroke="${strokeColor}" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 1 L16.5 9 L27 18 L24 20.5 L16.5 17.5 L16 26 L18.5 27.5 L18.5 28 L14 27 L9.5 28 L9.5 27.5 L12 26 L11.5 17.5 L4 20.5 L1 18 L11.5 9 Z"/>
+        <circle cx="14" cy="27" r="1.5" fill="#00f0ff" opacity="0.9"/>
+      </svg>
+    `;
+  } else if (isHelicopter) {
+    // Helicopter Rotorcraft with 4-Blade Spinning Rotor Silhouette
+    svgContent = `
+      <svg width="${size}" height="${size}" viewBox="0 0 26 26" fill="${fillColor}" stroke="${strokeColor}" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="13" cy="11" r="3.5"/>
+        <line x1="13" y1="1" x2="13" y2="21" stroke="#ffffff" stroke-width="1.2" opacity="0.8"/>
+        <line x1="3" y1="11" x2="23" y2="11" stroke="#ffffff" stroke-width="1.2" opacity="0.8"/>
+        <path d="M13 14 L13 25 L11 26 L15 26 Z"/>
+        <line x1="10" y1="25" x2="16" y2="25" stroke="#ffffff" stroke-width="1"/>
+      </svg>
+    `;
+  } else if (classification.category === "4-engine" || isCargo) {
+    // 4-Engine Heavy Widebody / Cargo (A380 / B747 / B777F)
     svgContent = `
       <svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="${fillColor}" stroke="${strokeColor}" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M16 1.8 C14.2 1.8 13.5 4.8 13.5 11 L13.5 21 L10 24 L10 26.5 L16 24.8 L22 26.5 L22 24 L18.5 21 L18.5 11 C18.5 4.8 17.8 1.8 16 1.8 Z"/>
@@ -130,6 +172,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFlightNumOnly, setSearchFlightNumOnly] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState<AircraftCategory | "all">("all");
   const [minAltitudeFilter, setMinAltitudeFilter] = useState(0);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [selectedFlightDetails, setSelectedFlightDetails] = useState<FlightDetailed | null>(null);
@@ -138,7 +181,8 @@ export default function App() {
   const [weatherEnabled, setWeatherEnabled] = useState(false);
   const [followFlight, setFollowFlight] = useState(true);
   const [visibleFlightsCount, setVisibleFlightsCount] = useState(40);
-  const [loadMoreIncrement, setLoadMoreIncrement] = useState(50);
+  const [cockpitFlight, setCockpitFlight] = useState<Flight | null>(null);
+  const [showCockpitModal, setShowCockpitModal] = useState(false);
 
   // Map references
   const mapRef = useRef<L.Map | null>(null);
@@ -303,9 +347,15 @@ export default function App() {
 
       const matchAlt = minAltitudeFilter === 0 || f.alt >= minAltitudeFilter;
 
-      return matchSearch && matchStatus && matchAlt;
+      const matchCategory = selectedCategory === "all" || f.category === selectedCategory || (
+        selectedCategory === "military" && (f.category === "military" || f.aircraft_type === "F35" || f.aircraft_type === "F22" || f.aircraft_type === "EF2000" || f.aircraft_type === "B2")
+      ) || (
+        selectedCategory === "helicopter" && (f.category === "helicopter" || f.aircraft_type === "H145" || f.aircraft_type === "EC135" || f.aircraft_type === "UH60")
+      );
+
+      return matchSearch && matchStatus && matchAlt && matchCategory;
     });
-  }, [flights, searchQuery, statusFilter, minAltitudeFilter]);
+  }, [flights, searchQuery, statusFilter, minAltitudeFilter, selectedCategory]);
 
   // Initialize Radar Map
   useEffect(() => {
@@ -369,13 +419,18 @@ export default function App() {
     // Viewport-aware flight collection: show ALL flights within the user's view!
     let displayList: Flight[] = [];
     
+    let candidateFlights = flights;
+    if (selectedCategory && selectedCategory !== "all") {
+      candidateFlights = candidateFlights.filter(f => f.category === selectedCategory);
+    }
+
     if (mapBounds && mapRef.current.getZoom() > 4) {
       // Zoomed into region/country/city: show 100% of flights in view!
-      const inView = flights.filter(f => mapBounds.contains([f.lat, f.lng]));
+      const inView = candidateFlights.filter(f => mapBounds.contains([f.lat, f.lng]));
       displayList = inView.slice(0, 3000);
     } else {
       // Zoomed out globally: display up to 2,500 active aircraft across continents
-      displayList = flights.slice(0, 2500);
+      displayList = candidateFlights.slice(0, 2500);
     }
 
     // Always ensure selected flight is rendered
@@ -707,6 +762,12 @@ export default function App() {
           closeDetailsPanel={() => setSelectedFlight(null)}
           minAltitudeFilter={minAltitudeFilter}
           setMinAltitudeFilter={setMinAltitudeFilter}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          onOpen3DCockpit={(flight: Flight) => {
+            setCockpitFlight(flight);
+            setShowCockpitModal(true);
+          }}
           onSelectFlight={(flight: Flight) => {
             setSelectedFlight(flight);
             fetchFlightDetails(flight);
@@ -733,6 +794,12 @@ export default function App() {
           selectedFlight={selectedFlight}
           setSelectedFlight={setSelectedFlight}
           fetchFlightDetails={fetchFlightDetails}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          onOpen3DCockpit={(flight: Flight) => {
+            setCockpitFlight(flight);
+            setShowCockpitModal(true);
+          }}
           setActiveTabMain={(tab: string) => {
             setActiveTab(tab);
             if (tab === "radar" && selectedFlight && mapRef.current) {
@@ -756,6 +823,10 @@ export default function App() {
           tileMode={tileMode}
           setTileMode={setTileMode}
           setActiveTab={setActiveTab}
+          onOpen3DCockpit={(flight: Flight) => {
+            setCockpitFlight(flight);
+            setShowCockpitModal(true);
+          }}
         />
 
         <AtcCommsTab 
@@ -828,7 +899,21 @@ export default function App() {
           );
         })}
       </nav>
+
+      {/* 3D Real-time Cockpit / Orbital Flight Simulator Modal */}
+      {showCockpitModal && cockpitFlight && (
+        <Cockpit3DModal
+          flight={cockpitFlight}
+          onClose={() => setShowCockpitModal(false)}
+          onFocusOnMap={(f) => {
+            setSelectedFlight(f);
+            setActiveTab("radar");
+            if (mapRef.current) {
+              mapRef.current.setView([f.lat, f.lng], 7);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
-

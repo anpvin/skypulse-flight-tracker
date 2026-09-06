@@ -26,7 +26,10 @@ export function SearchTab({
   selectedFlight,
   setSelectedFlight,
   fetchFlightDetails,
-  setActiveTabMain
+  setActiveTabMain,
+  onOpen3DCockpit,
+  selectedCategory,
+  setSelectedCategory
 }: any) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
@@ -57,7 +60,10 @@ export function SearchTab({
 
   // Sort and filter displayed list
   const sortedList = useMemo(() => {
-    const list = [...filteredFlights];
+    let list = [...filteredFlights];
+    if (selectedCategory && selectedCategory !== "all") {
+      list = list.filter(f => f.category === selectedCategory);
+    }
     list.sort((a, b) => {
       let comparison = 0;
       if (sortBy === "alt") comparison = (b.alt || 0) - (a.alt || 0);
@@ -67,7 +73,7 @@ export function SearchTab({
       return sortOrder === "desc" ? comparison : -comparison;
     });
     return list;
-  }, [filteredFlights, sortBy, sortOrder]);
+  }, [filteredFlights, selectedCategory, sortBy, sortOrder]);
 
   if (activeTab !== "search") return null;
 
@@ -90,32 +96,35 @@ export function SearchTab({
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
             <span className="text-slate-300 font-extrabold uppercase tracking-wider text-[11px]">
-              LIVE RADAR FEED: <strong className="text-white text-xs">{flights.length.toLocaleString()}</strong> TRANSPONDERS
+              TRACKED: <strong className="text-white text-xs">{flights.length.toLocaleString()}</strong> FLIGHTS
             </span>
           </div>
 
           {/* Quick Category Filter Pills */}
-          <div className="flex items-center bg-black/50 border border-white/10 rounded-xl p-1 font-mono text-[10px] font-bold overflow-x-auto gap-1">
-            {[
-              { id: "all", label: "ALL ACTIVE" },
-              { id: "high", label: "FL350+ CRUISE" },
-              { id: "climbing", label: "CLIMBING" },
-              { id: "descending", label: "DESCENDING" },
-              { id: "ground", label: "ON GROUND" }
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setStatusFilter(f.id)}
-                className={`px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-extrabold ${
-                  statusFilter === f.id
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 border border-blue-400/40"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          {setSelectedCategory && (
+            <div className="flex items-center bg-black/50 border border-white/10 rounded-xl p-1 font-mono text-[10px] font-bold overflow-x-auto gap-1">
+              {[
+                { id: "all", label: "ALL FLEET" },
+                { id: "commercial", label: "COMMERCIAL" },
+                { id: "military", label: "⚔️ MILITARY" },
+                { id: "helicopter", label: "🚁 HELICOPTERS" },
+                { id: "cargo", label: "📦 CARGO" },
+                { id: "general_aviation", label: "✈️ VIP GA" }
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCategory(c.id)}
+                  className={`px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-extrabold ${
+                    (selectedCategory || "all") === c.id
+                      ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-black"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Region Quick Filters */}
           <div className="hidden xl:flex items-center bg-black/40 border border-white/8 rounded-xl p-1 font-mono text-[9px] font-extrabold gap-1 text-slate-400">
@@ -365,14 +374,29 @@ export function SearchTab({
                   </div>
                 </div>
 
-                {/* Bottom Route Progress Bar */}
-                <div className="mt-3 pt-2 border-t border-white/6">
+                {/* Bottom Route Progress Bar & 3D Launcher */}
+                <div className="mt-3 pt-2 border-t border-white/6 flex flex-col gap-2">
                   <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
                     <div
                       className="bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-300 h-full rounded-full transition-all duration-300"
                       style={{ width: `${Math.max(3, Math.min(100, flight.progress_percent || 50))}%` }}
                     />
                   </div>
+                  {onOpen3DCockpit && (
+                    <div className="flex items-center justify-end">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFlight(flight);
+                          fetchFlightDetails(flight);
+                          onOpen3DCockpit(flight);
+                        }}
+                        className="px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 border border-cyan-500/30 rounded-lg text-[9px] font-black uppercase transition-all tracking-wider flex items-center gap-1"
+                      >
+                        👁️ 3D COCKPIT
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );

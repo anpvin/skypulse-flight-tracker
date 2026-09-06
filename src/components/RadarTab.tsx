@@ -4,9 +4,9 @@ import {
   Plane, Info, ChevronUp, ChevronDown, X, Radio, 
   Layers, Sliders, Crosshair, CloudRain, Search, 
   ArrowUpRight, ArrowDownRight, Compass, Navigation,
-  Activity, Eye, Maximize2 
+  Activity, Eye, Maximize2, ShieldAlert, Zap, Filter
 } from "lucide-react";
-import { Flight, FlightDetailed } from "../types";
+import { Flight, FlightDetailed, AircraftCategory } from "../types";
 import { getAltitudeColor, getAirlineName, getAirportCity, detectEmergencySquawks } from "../utils";
 
 interface RadarTabProps {
@@ -26,6 +26,9 @@ interface RadarTabProps {
   minAltitudeFilter?: number;
   setMinAltitudeFilter?: (alt: number) => void;
   onSelectFlight?: (flight: Flight) => void;
+  onOpen3DCockpit?: (flight: Flight) => void;
+  selectedCategory?: AircraftCategory | "all";
+  setSelectedCategory?: (cat: AircraftCategory | "all") => void;
 }
 
 export function RadarTab({
@@ -44,7 +47,10 @@ export function RadarTab({
   closeDetailsPanel,
   minAltitudeFilter,
   setMinAltitudeFilter,
-  onSelectFlight
+  onSelectFlight,
+  onOpen3DCockpit,
+  selectedCategory = "all",
+  setSelectedCategory
 }: RadarTabProps) {
   const [isHudExpanded, setIsHudExpanded] = useState(false);
   const [showRangeRings, setShowRangeRings] = useState(true);
@@ -67,6 +73,7 @@ export function RadarTab({
         (f.dep_iata || "").toLowerCase().includes(q) ||
         (f.arr_iata || "").toLowerCase().includes(q) ||
         (f.airline_name || "").toLowerCase().includes(q) ||
+        (f.category || "").toLowerCase().includes(q) ||
         (f.hex || "").toLowerCase().includes(q)
       )
       .slice(0, 8);
@@ -74,6 +81,11 @@ export function RadarTab({
 
   const emergencyFlights = useMemo(() => detectEmergencySquawks(flights), [flights]);
   const selectedAltColor = selectedFlight ? getAltitudeColor(selectedFlight.alt) : { hex: "#38bdf8" };
+
+  const militaryCount = useMemo(() => flights.filter(f => f.category === "military").length, [flights]);
+  const heliCount = useMemo(() => flights.filter(f => f.category === "helicopter").length, [flights]);
+  const cargoCount = useMemo(() => flights.filter(f => f.category === "cargo").length, [flights]);
+  const gaCount = useMemo(() => flights.filter(f => f.category === "general_aviation").length, [flights]);
 
   return (
     <div
@@ -84,11 +96,11 @@ export function RadarTab({
       {/* Underlying Leaflet Map Engine */}
       <div ref={mapContainerRef} className="w-full h-full absolute inset-0 z-0 bg-[#07090e]" />
 
-      {/* Live Squawk 7700 Emergency Alert Beacon */}
+      {/* Live Squawk 7700 / 7600 Emergency Alert Beacon */}
       {emergencyFlights.length > 0 && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 bg-red-600/90 border border-red-400 text-white font-mono text-xs font-black rounded-full shadow-[0_0_25px_rgba(239,68,68,0.8)] animate-pulse">
           <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-          <span>EMERGENCY SQUAWK 7700 DETECTED: {emergencyFlights[0].flight_iata || emergencyFlights[0].hex}</span>
+          <span>EMERGENCY SQUAWK {emergencyFlights[0].squawk} DETECTED: {emergencyFlights[0].flight_iata || emergencyFlights[0].hex}</span>
           <button
             onClick={() => onSelectFlight && onSelectFlight(emergencyFlights[0])}
             className="ml-2 px-2.5 py-0.5 bg-black text-white text-[10px] rounded-full hover:bg-white hover:text-black cursor-pointer uppercase transition-colors"
@@ -131,9 +143,65 @@ export function RadarTab({
         
         <div className="px-3 py-1.5 glass-panel-subtle rounded-xl text-slate-300 text-[10px] font-mono flex items-center gap-2 shadow-lg">
           <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-          <span>ACTIVE BLIPS: <strong className="text-white text-xs">{flights.length.toLocaleString()}</strong></span>
+          <span>TRACKING: <strong className="text-white text-xs">{flights.length.toLocaleString()}</strong> FLIGHTS</span>
         </div>
       </div>
+
+      {/* Top Center: Flightradar24 Aircraft Category Filter Pills */}
+      {setSelectedCategory && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-1.5 p-1 bg-slate-950/80 border border-slate-800 rounded-2xl backdrop-blur-xl shadow-2xl font-mono text-[10px]">
+          <button
+            onClick={() => setSelectedCategory("all")}
+            className={`px-3 py-1.5 rounded-xl font-black transition-all cursor-pointer ${
+              selectedCategory === "all" ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            ALL ({flights.length})
+          </button>
+          <button
+            onClick={() => setSelectedCategory("commercial")}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+              selectedCategory === "commercial" ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            COMMERCIAL
+          </button>
+          <button
+            onClick={() => setSelectedCategory("military")}
+            className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 transition-all cursor-pointer ${
+              selectedCategory === "military" ? "bg-rose-600 text-white shadow-md shadow-rose-500/30" : "text-rose-400 hover:text-rose-300"
+            }`}
+          >
+            <ShieldAlert className="w-3 h-3" />
+            MILITARY ({militaryCount})
+          </button>
+          <button
+            onClick={() => setSelectedCategory("helicopter")}
+            className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 transition-all cursor-pointer ${
+              selectedCategory === "helicopter" ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/30" : "text-emerald-400 hover:text-emerald-300"
+            }`}
+          >
+            <Activity className="w-3 h-3" />
+            HELIS ({heliCount})
+          </button>
+          <button
+            onClick={() => setSelectedCategory("cargo")}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+              selectedCategory === "cargo" ? "bg-amber-600 text-white shadow-md shadow-amber-500/30" : "text-amber-400 hover:text-amber-300"
+            }`}
+          >
+            CARGO ({cargoCount})
+          </button>
+          <button
+            onClick={() => setSelectedCategory("general_aviation")}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+              selectedCategory === "general_aviation" ? "bg-purple-600 text-white shadow-md shadow-purple-500/30" : "text-purple-400 hover:text-purple-300"
+            }`}
+          >
+            VIP GA ({gaCount})
+          </button>
+        </div>
+      )}
 
       {/* Top Right: Tactical Map Controls & Layer Selector */}
       <div className="absolute top-4 right-3 z-20 flex flex-col items-end gap-1.5 font-mono text-[10px]">
@@ -232,7 +300,7 @@ export function RadarTab({
               <input
                 type="text"
                 autoFocus
-                placeholder="Search Call, Flight #, Airport..."
+                placeholder="Search Call, Flight #, Airport, Type..."
                 value={radarSearchQuery}
                 onChange={(e) => setRadarSearchQuery(e.target.value)}
                 className="w-full bg-black/60 border border-blue-400/40 rounded-xl py-2 pl-3 pr-8 text-xs text-white placeholder-slate-500 focus:outline-none"
@@ -256,13 +324,20 @@ export function RadarTab({
                     onClick={() => {
                       setShowQuickSearch(false);
                       setRadarSearchQuery("");
-                      setActiveTab("briefing");
+                      if (onSelectFlight) onSelectFlight(f);
                     }}
                     className="p-2 rounded-lg bg-white/5 hover:bg-blue-600/30 cursor-pointer flex items-center justify-between text-xs transition-colors"
                   >
                     <div>
-                      <span className="font-extrabold text-white">{f.flight_iata || f.flight_number}</span>
-                      <span className="text-[9px] text-slate-400 ml-2">{f.dep_iata} ➔ {f.arr_iata}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold text-white">{f.flight_iata || f.flight_number}</span>
+                        <span className={`text-[9px] px-1 py-0.2 rounded font-mono uppercase ${
+                          f.category === "military" ? "bg-rose-500/30 text-rose-300" :
+                          f.category === "helicopter" ? "bg-emerald-500/30 text-emerald-300" :
+                          "bg-blue-500/20 text-blue-300"
+                        }`}>{f.category || "commercial"}</span>
+                      </div>
+                      <span className="text-[9px] text-slate-400">{f.dep_iata} ➔ {f.arr_iata} &bull; {f.aircraft_model || f.aircraft_type}</span>
                     </div>
                     <span className="text-[10px] font-bold text-cyan-400">FL{Math.round(f.alt / 100)}</span>
                   </div>
@@ -302,7 +377,7 @@ export function RadarTab({
               </div>
               <div className="flex items-center gap-2 text-amber-300">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]" />
-                <span>&lt; FL100 (Approach / Climb)</span>
+                <span>&lt; FL100 (Approach / Heli)</span>
               </div>
             </div>
           )}
@@ -319,16 +394,25 @@ export function RadarTab({
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 30 }}
-                className="glass-panel px-4 py-2.5 rounded-2xl shadow-2xl flex items-center justify-between gap-4 font-mono text-xs w-full max-w-xl mx-auto border border-blue-500/40"
+                className="glass-panel px-4 py-2.5 rounded-2xl shadow-2xl flex items-center justify-between gap-4 font-mono text-xs w-full max-w-2xl mx-auto border border-blue-500/40"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 bg-blue-600 text-white rounded-xl rotate-45 shrink-0 shadow-lg shadow-blue-500/30">
+                  <div className={`p-2 text-white rounded-xl rotate-45 shrink-0 shadow-lg ${
+                    selectedFlight.category === "military" ? "bg-rose-600 shadow-rose-500/30" :
+                    selectedFlight.category === "helicopter" ? "bg-emerald-600 shadow-emerald-500/30" :
+                    "bg-blue-600 shadow-blue-500/30"
+                  }`}>
                     <Plane className="w-3.5 h-3.5" />
                   </div>
                   <div className="truncate">
                     <div className="flex items-center gap-2">
                       <span className="font-black text-white text-sm tracking-wide">{selectedFlight.flight_iata || selectedFlight.flight_number}</span>
-                      <span className="text-[10px] px-1.5 py-0.2 bg-white/10 rounded font-bold text-slate-300">{selectedFlight.aircraft_type || "AIRLINER"}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                        selectedFlight.category === "military" ? "bg-rose-500/30 text-rose-300" :
+                        selectedFlight.category === "helicopter" ? "bg-emerald-500/30 text-emerald-300" :
+                        "bg-white/10 text-slate-300"
+                      }`}>{selectedFlight.category || "commercial"}</span>
+                      <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">[{selectedFlight.aircraft_model || selectedFlight.aircraft_type || "AIRCRAFT"}]</span>
                     </div>
                     <div className="text-[10px] text-slate-300 font-bold flex items-center gap-2 mt-0.5">
                       <span style={{ color: selectedAltColor.hex }}>FL{Math.round(selectedFlight.alt / 100)}</span>
@@ -340,6 +424,15 @@ export function RadarTab({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                  {onOpen3DCockpit && (
+                    <button
+                      onClick={() => onOpen3DCockpit(selectedFlight)}
+                      className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black text-[10px] tracking-wider transition-all cursor-pointer flex items-center gap-1.5 uppercase shadow-lg shadow-cyan-500/30"
+                      title="Launch 3D Cockpit & Flight Simulator"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> 3D COCKPIT
+                    </button>
+                  )}
                   <button
                     onClick={() => setIsHudExpanded(true)}
                     className="px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/60 border border-blue-400/40 text-blue-200 rounded-xl font-black text-[10px] tracking-wider transition-all cursor-pointer flex items-center gap-1 uppercase"
@@ -370,7 +463,11 @@ export function RadarTab({
                 className="glass-panel p-5 rounded-3xl shadow-2xl flex flex-col md:flex-row items-center gap-5 md:gap-8 w-full md:max-w-full font-mono text-xs border border-blue-500/40"
               >
                 <div className="flex items-center gap-3.5 w-full md:w-auto">
-                  <div className="p-2.5 bg-blue-600 text-white rounded-2xl rotate-45 shadow-xl shadow-blue-600/30 shrink-0">
+                  <div className={`p-2.5 text-white rounded-2xl rotate-45 shadow-xl shrink-0 ${
+                    selectedFlight.category === "military" ? "bg-rose-600 shadow-rose-500/30" :
+                    selectedFlight.category === "helicopter" ? "bg-emerald-600 shadow-emerald-500/30" :
+                    "bg-blue-600 shadow-blue-600/30"
+                  }`}>
                     <Plane className="w-5 h-5" />
                   </div>
                   <div>
@@ -405,6 +502,14 @@ export function RadarTab({
                 </div>
 
                 <div className="flex gap-2.5 w-full md:w-auto pt-2 md:pt-0 items-center">
+                  {onOpen3DCockpit && (
+                    <button
+                      onClick={() => onOpen3DCockpit(selectedFlight)}
+                      className="px-3.5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black rounded-xl transition-all cursor-pointer text-[10px] flex items-center gap-1.5 uppercase shadow-lg shadow-cyan-500/30"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> 3D COCKPIT
+                    </button>
+                  )}
                   <button
                     onClick={() => setIsHudExpanded(false)}
                     className="px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/10 text-slate-200 font-bold rounded-xl transition-all cursor-pointer text-[10px] flex items-center gap-1 uppercase"
@@ -434,7 +539,7 @@ export function RadarTab({
               className="glass-panel px-5 py-3 rounded-2xl shadow-2xl font-mono text-xs text-slate-300 text-center flex items-center justify-center gap-2.5 border border-white/10"
             >
               <Info className="w-4 h-4 text-cyan-400 animate-pulse" />
-              <span>TAP ANY AIRCRAFT ON RADAR OR USE SEARCH TO VIEW FULL TELEMETRY</span>
+              <span>TAP ANY AIRCRAFT ON RADAR OR USE SEARCH TO VIEW 3D COCKPIT & LIVE TELEMETRY</span>
             </motion.div>
           )}
         </AnimatePresence>

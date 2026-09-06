@@ -1,3 +1,5 @@
+export type AircraftCategory = "commercial" | "military" | "helicopter" | "cargo" | "general_aviation";
+
 export interface Flight {
   hex: string;
   reg_number?: string;
@@ -16,7 +18,7 @@ export interface Flight {
   airline_icao?: string;
   airline_iata?: string;
   airline_name?: string;
-  status: "en-route" | "climbing" | "descending" | "ground" | "landed" | "holding" | string;
+  status: "en-route" | "climbing" | "descending" | "ground" | "landed" | "holding" | "combat_air_patrol" | "tactical_refueling" | "medevac" | "sar" | string;
   lat: number;
   lng: number;
   alt: number; // altitude in feet
@@ -27,7 +29,8 @@ export interface Flight {
   squawk?: string;
   aircraft_type?: string;
   aircraft_model?: string;
-  aircraft_category?: "4-engine" | "2-engine-wide" | "2-engine-narrow" | "regional" | "turboprop" | "ga";
+  category?: AircraftCategory;
+  aircraft_category?: "4-engine" | "2-engine-wide" | "2-engine-narrow" | "regional" | "turboprop" | "ga" | "fighter" | "bomber" | "rotorcraft" | "tanker";
   progress_percent?: number;
   dist_traveled_km?: number;
   dist_remaining_km?: number;
@@ -37,6 +40,10 @@ export interface Flight {
   distance_total_km?: number;
   eta_minutes?: number;
   mach?: number;
+  g_force?: number;
+  rotor_rpm?: number;
+  mission_type?: string;
+  operator_country?: string;
   isScheduled?: boolean;
   scheduledDepartureTime?: string;
   scheduledArrivalTime?: string;
@@ -86,6 +93,19 @@ export interface FlightDetailed {
     wingspan: string;
     range: string;
   };
+  militarySpecs?: {
+    squadron?: string;
+    missionRole?: string;
+    weaponsHardpoints?: number;
+    stealthClass?: string;
+    radarType?: string;
+  };
+  helicopterSpecs?: {
+    rotorDiameterFt?: number;
+    hoistEquipped?: boolean;
+    medevacBeds?: number;
+    maxHoverCeilingFt?: number;
+  };
   copilotAnalysis?: string;
 }
 
@@ -94,6 +114,21 @@ export interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   timestamp?: string;
+}
+
+export interface AirportRunway {
+  identifier: string; // e.g. "09L/27R"
+  lengthFt: number;
+  widthFt: number;
+  surface: "Asphalt" | "Concrete" | "Grooved Concrete" | "Grass";
+  ilsFreq?: string;
+  headingDeg: number;
+}
+
+export interface AirportFrequency {
+  type: "TWR" | "GND" | "APP" | "DEP" | "ATIS" | "DEL" | "UNICOM";
+  freqMhz: string;
+  name: string;
 }
 
 export interface AirportInfo {
@@ -106,8 +141,13 @@ export interface AirportInfo {
   lng: number;
   altFt?: number;
   runways?: string[];
+  runwaysDetail?: AirportRunway[];
+  frequencies?: AirportFrequency[];
   timezone?: string;
   hubFor?: string[];
+  delayIndex?: number; // 0 to 5 (0 = No delays, 5 = Severe delay)
+  terminals?: number;
+  category?: "international" | "regional" | "military_base" | "heliport";
 }
 
 export interface AtcTransmission {
@@ -144,4 +184,16 @@ export interface TcasWarning {
   verticalDistanceFt: number;
   severity: "TA" | "RA"; // Traffic Advisory vs Resolution Advisory
   advisoryText: string;
+}
+
+export type WeatherLayerType = "none" | "radar" | "clouds" | "wind";
+
+export interface FlightFilterState {
+  categories: AircraftCategory[];
+  minAlt: number;
+  maxAlt: number;
+  minSpeed: number;
+  maxSpeed: number;
+  squawkOnly: boolean;
+  searchQuery: string;
 }

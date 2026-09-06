@@ -520,6 +520,11 @@ interface SimFlightState {
   airline_name: string;
   aircraft_type: string;
   aircraft_model: string;
+  category: "commercial" | "military" | "helicopter" | "cargo" | "general_aviation";
+  mission_type?: string;
+  rotor_rpm?: number;
+  g_force?: number;
+  operator_country?: string;
   cruiseAltFt: number;
   cruiseSpeedKmh: number;
   progress: number;
@@ -560,7 +565,8 @@ function initAutonomousFleet(): SimFlightState[] {
   const airportCodes = Object.keys(globalAirports);
   const airlineKeys = Object.keys(majorAirlines).filter(k => k.length === 3);
   const fleet: SimFlightState[] = [];
-  const aircraftModels = [
+
+  const commercialModels = [
     { type: "B77W", name: "Boeing 777-300ER" },
     { type: "A359", name: "Airbus A350-900" },
     { type: "B789", name: "Boeing 787-9 Dreamliner" },
@@ -571,13 +577,41 @@ function initAutonomousFleet(): SimFlightState[] {
     { type: "B748", name: "Boeing 747-8 Intercontinental" }
   ];
 
+  const militaryModels = [
+    { type: "F35", name: "Lockheed Martin F-35 Lightning II", role: "Stealth Strike Fighter", callsigns: ["VIPER", "LIGHTNING", "STRIKE", "FALCON"] },
+    { type: "F22", name: "Lockheed Martin F-22 Raptor", role: "Air Dominance Fighter", callsigns: ["RAPTOR", "TALON", "SENTRY", "COBRA"] },
+    { type: "EF2000", name: "Eurofighter Typhoon", role: "Tactical Interceptor", callsigns: ["TYPHOON", "VALKYRIE", "RAZOR", "HAWK"] },
+    { type: "B2", name: "Northrop Grumman B-2 Spirit", role: "Strategic Stealth Bomber", callsigns: ["DEATH", "GHOST", "SHADOW", "REAPER"] },
+    { type: "B52H", name: "Boeing B-52H Stratofortress", role: "Heavy Strategic Bomber", callsigns: ["BUFF", "DOOM", "SKULL", "HAMMER"] },
+    { type: "C17", name: "Boeing C-17 Globemaster III", role: "Strategic Military Airlift", callsigns: ["MOOSE", "TITAN", "ATLAS", "HERC"] },
+    { type: "KC135", name: "Boeing KC-135 Stratotanker", role: "Airborne Refueling Tanker", callsigns: ["SHELL", "TEXACO", "ESSO", "GASSER"] },
+    { type: "E3", name: "Boeing E-3 Sentry (AWACS)", role: "Airborne Early Warning & Control", callsigns: ["DISC", "SENTRY", "MAGIC", "EYE"] },
+    { type: "RQ4", name: "RQ-4 Global Hawk UAV Drone", role: "High-Altitude Recon Drone", callsigns: ["FORTE", "NIGHTOWL", "ORBIT", "SCANNER"] }
+  ];
+
+  const helicopterModels = [
+    { type: "H145", name: "Airbus Helicopters H145 / BK117", role: "Air Ambulance (HEMS)", callsigns: ["MEDEVAC", "LIFEFLIGHT", "RESCUE", "ANGEL"] },
+    { type: "EC135", name: "Airbus Helicopters EC135", role: "Police & SAR Patrol", callsigns: ["POLAIR", "AIRWOLF", "GUARDIAN", "COPTER"] },
+    { type: "S92", name: "Sikorsky S-92 Helibus", role: "Offshore Platform Shuttle", callsigns: ["BRISTOW", "OILMAN", "SEAHAWK", "OFFSHORE"] },
+    { type: "AH64", name: "Boeing AH-64E Apache Guardian", role: "Attack Helicopter Gunship", callsigns: ["APACHE", "WARLORD", "GUNSLINGER", "HELLFIRE"] },
+    { type: "UH60", name: "Sikorsky UH-60M Black Hawk", role: "Combat Assault Helicopter", callsigns: ["DUSTOFF", "BLACKHAWK", "GHOST", "CHOPPER"] },
+    { type: "CH47", name: "Boeing CH-47F Chinook", role: "Heavy Lift Rotorcraft", callsigns: ["HOOK", "CHINOOK", "MAMMOTH", "BIGLIFT"] },
+    { type: "V22", name: "Bell Boeing V-22 Osprey", role: "Tiltrotor Tactical Transport", callsigns: ["OSPREY", "TILT", "ROTOR", "TRANSIT"] }
+  ];
+
+  const cargoModels = [
+    { type: "B77F", name: "Boeing 777F Freighter", airline: "FedEx Express", icao: "FDX", iata: "FX", prefix: "FDX" },
+    { type: "B748F", name: "Boeing 747-8F Cargo Giant", airline: "UPS Airlines", icao: "UPS", iata: "5X", prefix: "UPS" },
+    { type: "A330F", name: "Airbus A330-200F Cargo", airline: "DHL Aviation", icao: "DHL", iata: "D0", prefix: "DHL" },
+    { type: "B744F", name: "Boeing 747-400F Heavy", airline: "Atlas Air Worldwide", icao: "GTI", iata: "5Y", prefix: "GTI" }
+  ];
+
   let flightCount = 0;
   for (let i = 0; i < airportCodes.length; i++) {
     const depIata = airportCodes[i];
     const depAirport = globalAirports[depIata];
     if (!depAirport) continue;
 
-    // Generate 24 outbound flights per hub to create 3,700+ worldwide flights
     const numFlights = 24;
     for (let j = 0; j < numFlights; j++) {
       flightCount++;
@@ -589,39 +623,167 @@ function initAutonomousFleet(): SimFlightState[] {
       const arrAirport = globalAirports[arrIata];
       if (!arrAirport) continue;
 
-      const airlineCode = airlineKeys[(i + j) % airlineKeys.length];
-      const airline = majorAirlines[airlineCode] || { name: "Global Air Carrier", iata: "GA", icao: "GAC" };
-      const fltNum = `${airline.iata || airline.icao.slice(0, 2)}${100 + (flightCount % 899)}`;
       const hex = (0x400000 + flightCount).toString(16).toUpperCase();
-      const ac = aircraftModels[(i + j) % aircraftModels.length];
-      const cruiseAltFt = 30000 + ((i + j) % 11) * 1000;
-      const cruiseSpeedKmh = 820 + ((i * 3 + j) % 120);
       const initialProgress = ((i * 37 + j * 91) % 1000) / 1000;
+      const slot = flightCount % 10;
 
       let squawk = "1200";
       if (flightCount === 77) squawk = "7700"; // Squawk Emergency
       else if (flightCount === 76) squawk = "7600"; // Radio failure
-      else if (flightCount % 10 === 0) squawk = `${2000 + (flightCount % 5000)}`;
+      else if (flightCount % 8 === 0) squawk = `${2000 + (flightCount % 5000)}`;
 
-      fleet.push({
-        hex,
-        reg_number: `N${100 + (flightCount % 899)}SP`,
-        flight_number: fltNum,
-        flight_icao: `${airline.icao}${100 + (flightCount % 899)}`,
-        flight_iata: fltNum,
-        dep_iata: depIata,
-        arr_iata: arrIata,
-        airline_icao: airline.icao,
-        airline_iata: airline.iata,
-        airline_name: airline.name,
-        aircraft_type: ac.type,
-        aircraft_model: ac.name,
-        cruiseAltFt,
-        cruiseSpeedKmh,
-        progress: initialProgress,
-        speedFactor: 0.00015 + ((i + j) % 5) * 0.00004,
-        squawk
-      });
+      // 1. Military Sorties (15% of fleet)
+      if (slot === 1 || slot === 2) {
+        const mil = militaryModels[(i + j) % militaryModels.length];
+        const callsignBase = mil.callsigns[(i * 3 + j) % mil.callsigns.length];
+        const fltNum = `${callsignBase}${10 + (flightCount % 89)}`;
+        const isSupersonic = mil.type === "F35" || mil.type === "F22" || mil.type === "EF2000";
+        const cruiseAltFt = isSupersonic ? 45000 + ((i + j) % 15) * 1000 : 36000;
+        const cruiseSpeedKmh = isSupersonic ? 1250 + ((i * 5) % 300) : 850;
+
+        fleet.push({
+          hex,
+          reg_number: `MIL-${1000 + (flightCount % 8999)}`,
+          flight_number: fltNum,
+          flight_icao: fltNum,
+          flight_iata: fltNum,
+          dep_iata: depIata,
+          arr_iata: arrIata,
+          airline_icao: "MIL",
+          airline_iata: "M",
+          airline_name: "Strategic Air Command / Military Patrol",
+          aircraft_type: mil.type,
+          aircraft_model: mil.name,
+          category: "military",
+          mission_type: mil.role,
+          g_force: isSupersonic ? 1.4 : 1.0,
+          operator_country: depAirport.country || "International",
+          cruiseAltFt,
+          cruiseSpeedKmh,
+          progress: initialProgress,
+          speedFactor: 0.00022,
+          squawk: squawk === "1200" ? `${5200 + (flightCount % 400)}` : squawk
+        });
+      }
+      // 2. Helicopter / Rotorcraft (10% of fleet)
+      else if (slot === 3) {
+        const heli = helicopterModels[(i + j) % helicopterModels.length];
+        const callsignBase = heli.callsigns[(i * 2 + j) % heli.callsigns.length];
+        const fltNum = `${callsignBase}${1 + (flightCount % 99)}`;
+        const cruiseAltFt = 2000 + ((i + j) % 25) * 100;
+        const cruiseSpeedKmh = 230 + ((i * 3) % 60);
+
+        fleet.push({
+          hex,
+          reg_number: `N${200 + (flightCount % 799)}HE`,
+          flight_number: fltNum,
+          flight_icao: fltNum,
+          flight_iata: fltNum,
+          dep_iata: depIata,
+          arr_iata: arrIata,
+          airline_icao: "HELI",
+          airline_iata: "H",
+          airline_name: "Helicopter Air Rescue & EMS Wing",
+          aircraft_type: heli.type,
+          aircraft_model: heli.name,
+          category: "helicopter",
+          mission_type: heli.role,
+          rotor_rpm: 395 + (flightCount % 30),
+          operator_country: depAirport.country || "International",
+          cruiseAltFt,
+          cruiseSpeedKmh,
+          progress: initialProgress,
+          speedFactor: 0.00010,
+          squawk: squawk === "1200" ? "1200" : squawk
+        });
+      }
+      // 3. Heavy Cargo Freighters (10% of fleet)
+      else if (slot === 4) {
+        const crg = cargoModels[(i + j) % cargoModels.length];
+        const fltNum = `${crg.prefix}${100 + (flightCount % 899)}`;
+        const cruiseAltFt = 32000 + ((i + j) % 7) * 1000;
+        const cruiseSpeedKmh = 860 + ((i * 3) % 80);
+
+        fleet.push({
+          hex,
+          reg_number: `N${400 + (flightCount % 599)}CG`,
+          flight_number: fltNum,
+          flight_icao: fltNum,
+          flight_iata: fltNum,
+          dep_iata: depIata,
+          arr_iata: arrIata,
+          airline_icao: crg.icao,
+          airline_iata: crg.iata,
+          airline_name: crg.airline,
+          aircraft_type: crg.type,
+          aircraft_model: crg.name,
+          category: "cargo",
+          mission_type: "Global Freight Transport",
+          cruiseAltFt,
+          cruiseSpeedKmh,
+          progress: initialProgress,
+          speedFactor: 0.00016,
+          squawk
+        });
+      }
+      // 4. VIP Business Jets & GA (5% of fleet)
+      else if (slot === 5) {
+        const fltNum = `LX-JET${10 + (flightCount % 89)}`;
+        const cruiseAltFt = 41000 + ((i + j) % 6) * 1000;
+        const cruiseSpeedKmh = 910 + ((i * 2) % 60);
+
+        fleet.push({
+          hex,
+          reg_number: `N${700 + (flightCount % 299)}GA`,
+          flight_number: fltNum,
+          flight_icao: fltNum,
+          flight_iata: fltNum,
+          dep_iata: depIata,
+          arr_iata: arrIata,
+          airline_icao: "EXEC",
+          airline_iata: "EX",
+          airline_name: "Executive VIP Flight Services",
+          aircraft_type: "G650",
+          aircraft_model: "Gulfstream G650ER Business Jet",
+          category: "general_aviation",
+          mission_type: "VIP Executive Transport",
+          cruiseAltFt,
+          cruiseSpeedKmh,
+          progress: initialProgress,
+          speedFactor: 0.00018,
+          squawk
+        });
+      }
+      // 5. Commercial Airliners (60% of fleet)
+      else {
+        const airlineCode = airlineKeys[(i + j) % airlineKeys.length];
+        const airline = majorAirlines[airlineCode] || { name: "Global Air Carrier", iata: "GA", icao: "GAC" };
+        const fltNum = `${airline.iata || airline.icao.slice(0, 2)}${100 + (flightCount % 899)}`;
+        const ac = commercialModels[(i + j) % commercialModels.length];
+        const cruiseAltFt = 31000 + ((i + j) % 10) * 1000;
+        const cruiseSpeedKmh = 840 + ((i * 3 + j) % 110);
+
+        fleet.push({
+          hex,
+          reg_number: `N${100 + (flightCount % 899)}SP`,
+          flight_number: fltNum,
+          flight_icao: `${airline.icao}${100 + (flightCount % 899)}`,
+          flight_iata: fltNum,
+          dep_iata: depIata,
+          arr_iata: arrIata,
+          airline_icao: airline.icao,
+          airline_iata: airline.iata,
+          airline_name: airline.name,
+          aircraft_type: ac.type,
+          aircraft_model: ac.name,
+          category: "commercial",
+          cruiseAltFt,
+          cruiseSpeedKmh,
+          progress: initialProgress,
+          speedFactor: 0.00015 + ((i + j) % 5) * 0.00004,
+          squawk
+        });
+      }
     }
   }
 
@@ -662,11 +824,15 @@ function updateAutonomousFleet(): any[] {
     const distRemainingKm = Math.max(0, Math.round(totalDistKm * (1 - sim.progress)));
     const speedKnots = Math.round(sim.cruiseSpeedKmh / 1.852);
 
-    let status: "en-route" | "climbing" | "descending" | "ground" = "en-route";
+    let status: "en-route" | "climbing" | "descending" | "ground" | "combat_air_patrol" | "medevac" | "sar" = "en-route";
     let currentAlt = sim.cruiseAltFt;
     let vspeed = 0;
 
-    if (sim.progress < 0.08) {
+    if (sim.category === "military") {
+      status = "combat_air_patrol";
+    } else if (sim.category === "helicopter") {
+      status = sim.mission_type?.includes("EMS") ? "medevac" : "sar";
+    } else if (sim.progress < 0.08) {
       status = "climbing";
       currentAlt = Math.round(sim.cruiseAltFt * (sim.progress / 0.08));
       vspeed = 2200;
@@ -679,7 +845,7 @@ function updateAutonomousFleet(): any[] {
     result.push({
       hex: sim.hex,
       reg_number: sim.reg_number,
-      flag: "International",
+      flag: sim.operator_country || "International",
       flight_number: sim.flight_number,
       flight_icao: sim.flight_icao,
       flight_iata: sim.flight_iata,
@@ -694,6 +860,11 @@ function updateAutonomousFleet(): any[] {
       airline_icao: sim.airline_icao,
       airline_iata: sim.airline_iata,
       airline_name: sim.airline_name,
+      category: sim.category,
+      mission_type: sim.mission_type,
+      rotor_rpm: sim.rotor_rpm,
+      g_force: sim.g_force || 1.0,
+      operator_country: sim.operator_country,
       status,
       lat: currentPos.lat,
       lng: currentPos.lng,
@@ -705,7 +876,7 @@ function updateAutonomousFleet(): any[] {
       squawk: sim.squawk,
       aircraft_type: sim.aircraft_type,
       aircraft_model: sim.aircraft_model,
-      aircraft_category: "2-engine-wide",
+      aircraft_category: sim.category === "military" ? "fighter" : sim.category === "helicopter" ? "rotorcraft" : "2-engine-wide",
       progress_percent: Math.round(sim.progress * 100),
       dist_traveled_km: distTraveledKm,
       dist_remaining_km: distRemainingKm,
