@@ -7,13 +7,14 @@ import {
   CloudRain, Crosshair, RefreshCw, X, Sliders, 
   ExternalLink, Sparkles, Building2, Volume2 
 } from "lucide-react";
-import { Flight, FlightDetailed } from "./types";
+import { Flight, FlightDetailed, AircraftCategory } from "./types";
 import { RadarTab } from "./components/RadarTab";
 import { SearchTab } from "./components/SearchTab";
 import { BriefingTab } from "./components/BriefingTab";
 import { AnalyticsTab } from "./components/AnalyticsTab";
 import { AtcCommsTab } from "./components/AtcCommsTab";
 import { AirportExplorerTab } from "./components/AirportExplorerTab";
+import { Cockpit3DModal } from "./components/Cockpit3DModal";
 import { 
   getAirportCoords, getAirportFullName, getAirportCity, 
   getAirlineName, getFlightTimes, getBarometricPressure, 
@@ -51,9 +52,6 @@ function getVectorPoint(lat: number, lng: number, headingDeg: number, distanceKm
   );
   return [deg(lat2), deg(lon2)];
 }
-
-import { Cockpit3DModal } from "./components/Cockpit3DModal";
-import { AircraftCategory } from "./types";
 
 // Custom Plane Marker generator with Multi-Category Silhouette & Altitude Band Coloring
 function createPlaneIcon(flight: any, rotation: number, isSelected: boolean) {
@@ -438,13 +436,20 @@ export default function App() {
     if (activeTab !== "radar" || !mapContainerRef.current) return;
     
     if (!mapRef.current) {
-      mapRef.current = L.map(mapContainerRef.current, {
-        zoomControl: false,
-        attributionControl: false,
-        preferCanvas: true
-      }).setView([28, 15], 3);
+      if ((mapContainerRef.current as any)._leaflet_id) {
+        delete (mapContainerRef.current as any)._leaflet_id;
+      }
+      try {
+        mapRef.current = L.map(mapContainerRef.current, {
+          zoomControl: false,
+          attributionControl: false,
+          preferCanvas: true
+        }).setView([28, 15], 3);
 
-      L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+        L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+      } catch (err) {
+        console.warn("Radar map init notice:", err);
+      }
     }
 
     const tileUrl = tileMode === "satellite" 
@@ -681,11 +686,18 @@ export default function App() {
   useEffect(() => {
     if (activeTab === "briefing" && briefingMapContainerRef.current && selectedFlight) {
       if (!briefingMapRef.current) {
-        briefingMapRef.current = L.map(briefingMapContainerRef.current, {
-          zoomControl: false,
-          attributionControl: false,
-          preferCanvas: true
-        });
+        if ((briefingMapContainerRef.current as any)._leaflet_id) {
+          delete (briefingMapContainerRef.current as any)._leaflet_id;
+        }
+        try {
+          briefingMapRef.current = L.map(briefingMapContainerRef.current, {
+            zoomControl: false,
+            attributionControl: false,
+            preferCanvas: true
+          });
+        } catch (err) {
+          console.warn("Briefing map init notice:", err);
+        }
       }
 
       const tileUrl = tileMode === "satellite" 
