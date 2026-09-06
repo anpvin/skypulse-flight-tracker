@@ -124,7 +124,13 @@ function resolveFlightRoute(
 }
 
 // 1. OpenSky Network Global Live Ingestor (Supports Anonymous & Authenticated API Keys)
+let openSkyBackoffUntil = 0;
+
 async function fetchOpenSkyGlobalFlights(): Promise<{ flights: any[]; source: string }> {
+  if (Date.now() < openSkyBackoffUntil) {
+    return { flights: [], source: "opensky-rate-limited" };
+  }
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -147,6 +153,11 @@ async function fetchOpenSkyGlobalFlights(): Promise<{ flights: any[]; source: st
       headers
     });
     clearTimeout(timeoutId);
+
+    if (res.status === 429) {
+      openSkyBackoffUntil = Date.now() + 30000; // back off for 30 seconds
+      return { flights: [], source: "opensky-429" };
+    }
 
     if (!res.ok) {
       console.warn(`OpenSky returned HTTP ${res.status}`);
