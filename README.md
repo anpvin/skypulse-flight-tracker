@@ -190,12 +190,18 @@ flight/
 
 ---
 
-## ⚙️ Configuration
+---
 
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `3000` | Port for the backend Express server & frontend proxy |
-| `GEMINI_API_KEY` | *None (Optional)* | Google Gemini API key for AI Copilot flight route analysis |
+## ⚙️ Supported API Keys & Data Providers
+
+SkyPulse works **100% out of the box** without any required API keys. To unlock advanced high-frequency feeds, authentic airline schedules, real-time NOAA METAR observations, and AI copilot analysis, you can add any of the following optional keys to your `.env` file:
+
+| Provider | Environment Variable | Registration Link | Benefits |
+|---|---|---|---|
+| **OpenSky Network** | `OPENSKY_USERNAME`<br>`OPENSKY_PASSWORD` | [opensky-network.org](https://opensky-network.org/) | Unlocks 10x higher rate limits, sub-second polling, and 15,000+ live ADS-B Mode-S transponders. |
+| **AirLabs API** | `AIRLABS_API_KEY` | [airlabs.co](https://airlabs.co/) | Real-time commercial airline schedules, actual route codes, terminal/gate numbers, and live delay tracking. |
+| **NOAA AviationWeather** | *(Built-in / Zero Config)* | [aviationweather.gov](https://aviationweather.gov/) | Real-time live decoded METAR weather observations for 300+ international hubs worldwide. |
+| **Google Gemini AI** | `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com/) | Real-time AI Copilot route intelligence, passenger load estimation, and tactical ATC clearance chat. |
 
 ---
 

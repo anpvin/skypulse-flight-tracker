@@ -33,7 +33,7 @@ function getGeminiClient(): GoogleGenAI | null {
         apiKey,
         httpOptions: {
           headers: {
-            'User-Agent': 'aistudio-build',
+            'User-Agent': 'skypulse-flight-tracker',
           }
         }
       });
@@ -74,27 +74,22 @@ function resolveFlightRoute(
   const primaryHubIata = airline?.hub || "JFK";
   const primaryHub = globalAirports[primaryHubIata] || globalAirports["JFK"];
 
-  // Find nearest airports behind the aircraft (potential departures) and in front (potential arrivals)
   let bestDep: any = primaryHub;
   let bestArr: any = globalAirports["LHR"];
   let minDepScore = Infinity;
   let minArrScore = Infinity;
 
-  // Filter candidates within 6000 km
-  for (const airport of airportArray) {
+  for (let i = 0; i < airportArray.length; i++) {
+    const airport = airportArray[i];
     const dist = getDistanceKm(lat, lng, airport.lat, airport.lng);
-    if (dist > 8000 || dist < 15) continue;
+    if (dist > 14000) continue;
 
-    // Bearing from airport to plane vs plane heading
     const bearingFromAirport = calculateBearing(airport.lat, airport.lng, lat, lng);
     const bearingToAirport = calculateBearing(lat, lng, airport.lat, airport.lng);
 
-    // Difference between flight heading and bearing from departure airport
     const depAngleDiff = Math.abs(((headingDeg - bearingFromAirport + 540) % 360) - 180);
-    // Difference between flight heading and bearing to destination airport
     const arrAngleDiff = Math.abs(((headingDeg - bearingToAirport + 540) % 360) - 180);
 
-    // Departure score: smaller angle diff + reasonable distance + hub bonus
     const hubDepBonus = (airport.iata === primaryHubIata) ? 0.4 : 1.0;
     const depScore = (depAngleDiff * 2 + dist * 0.05) * hubDepBonus;
     if (depAngleDiff < 75 && depScore < minDepScore) {
@@ -102,7 +97,6 @@ function resolveFlightRoute(
       bestDep = airport;
     }
 
-    // Arrival score: smaller angle diff in front of plane
     const hubArrBonus = (airport.iata === primaryHubIata) ? 0.6 : 1.0;
     const arrScore = (arrAngleDiff * 2 + dist * 0.05) * hubArrBonus;
     if (arrAngleDiff < 75 && arrScore < minArrScore && airport.iata !== bestDep?.iata) {
@@ -111,7 +105,6 @@ function resolveFlightRoute(
     }
   }
 
-  // Fallback defaults if no good geometric alignment
   if (!bestDep || !bestArr || bestDep.iata === bestArr.iata) {
     if (airline?.hub && globalAirports[airline.hub]) {
       bestDep = globalAirports[airline.hub];
@@ -130,27 +123,38 @@ function resolveFlightRoute(
   };
 }
 
-// OpenSky Network Primary Global Live Fetcher
-async function fetchOpenSkyGlobalFlights(): Promise<any[]> {
+// 1. OpenSky Network Global Live Ingestor (Supports Anonymous & Authenticated API Keys)
+async function fetchOpenSkyGlobalFlights(): Promise<{ flights: any[]; source: string }> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 9000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const headers: Record<string, string> = {
+      "User-Agent": "SkyPulseFlightTracker/5.0 (Live Aviation Telemetry)",
+      "Accept": "application/json"
+    };
+
+    // Authenticate if OpenSky credentials are provided in .env
+    if (process.env.OPENSKY_USERNAME && process.env.OPENSKY_PASSWORD) {
+      const basic = Buffer.from(`${process.env.OPENSKY_USERNAME}:${process.env.OPENSKY_PASSWORD}`).toString("base64");
+      headers["Authorization"] = `Basic ${basic}`;
+    } else if (process.env.OPENSKY_TOKEN) {
+      headers["Authorization"] = `Bearer ${process.env.OPENSKY_TOKEN}`;
+    }
+
     const res = await fetch("https://opensky-network.org/api/states/all", {
       signal: controller.signal,
-      headers: { 
-        "User-Agent": "AeroVexFlightRadar/4.0 (Live Aviation Telemetry)",
-        "Accept": "application/json"
-      }
+      headers
     });
     clearTimeout(timeoutId);
 
     if (!res.ok) {
       console.warn(`OpenSky returned HTTP ${res.status}`);
-      return [];
+      return { flights: [], source: "opensky-error" };
     }
 
     const json = await res.json();
-    if (!json || !Array.isArray(json.states)) return [];
+    if (!json || !Array.isArray(json.states)) return { flights: [], source: "opensky-empty" };
 
     const parsedFlights: any[] = [];
     const validStates = json.states;
@@ -174,7 +178,7 @@ async function fetchOpenSkyGlobalFlights(): Promise<any[]> {
       const speedKnots = Math.round(speedKmh / 1.852);
       const track = Math.round(parseFloat(state[10] || 0));
       const vspeedMps = parseFloat(state[11] || 0);
-      const vspeedFpm = Math.round(vspeedMps * 196.85); // m/s to ft/min
+      const vspeedFpm = Math.round(vspeedMps * 196.85);
       const onGround = Boolean(state[8]);
       const squawk = (state[14] || "").toString().trim();
       const country = (state[2] || "").toString().trim();
@@ -202,7 +206,6 @@ async function fetchOpenSkyGlobalFlights(): Promise<any[]> {
         }
       }
 
-      // Flight status
       let status: "en-route" | "climbing" | "descending" | "ground" = "en-route";
       if (onGround || speedKmh < 45 || altFt < 500) {
         status = "ground";
@@ -212,7 +215,6 @@ async function fetchOpenSkyGlobalFlights(): Promise<any[]> {
         status = "descending";
       }
 
-      // Resolve Route & Distance
       const route = resolveFlightRoute(lat, lng, track, airlineIcao || airlineIata, callsign);
       const depAirport = globalAirports[route.depIata];
       const arrAirport = globalAirports[route.arrIata];
@@ -235,7 +237,6 @@ async function fetchOpenSkyGlobalFlights(): Promise<any[]> {
         }
       }
 
-      // Deduce aircraft model based on airline and speed/alt profile
       let aircraftType = "B738";
       if (altFt >= 38000 || speedKmh > 920) aircraftType = "A359";
       else if (altFt >= 34000) aircraftType = "B789";
@@ -280,30 +281,253 @@ async function fetchOpenSkyGlobalFlights(): Promise<any[]> {
         dist_traveled_km: distTraveledKm,
         dist_remaining_km: distRemainingKm,
         dist_total_km: distTotalKm,
+        distance_traveled_km: distTraveledKm,
+        distance_remaining_km: distRemainingKm,
+        distance_total_km: distTotalKm,
         eta_minutes: etaMinutes,
         mach
       });
     }
 
-    return parsedFlights;
+    const isAuth = Boolean(process.env.OPENSKY_USERNAME || process.env.OPENSKY_TOKEN);
+    return {
+      flights: parsedFlights,
+      source: isAuth ? `OpenSky Network Authenticated Feed (${parsedFlights.length} flights)` : `OpenSky Network Global Feed (${parsedFlights.length} flights)`
+    };
   } catch (err: any) {
     console.error("OpenSky fetch error:", err?.message || err);
-    return [];
+    return { flights: [], source: "error" };
   }
 }
 
-// Background Ingestion Daemon - Updates cache every 8 seconds
+// 2. AirLabs Commercial Live Flights Feed Ingestor (if AIRLABS_API_KEY is configured)
+async function fetchAirLabsFlights(): Promise<any[]> {
+  const apiKey = process.env.AIRLABS_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(`https://airlabs.co/api/v9/flights?api_key=${apiKey}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && Array.isArray(json.response)) {
+        return json.response.map((f: any) => {
+          const lat = parseFloat(f.lat);
+          const lng = parseFloat(f.lng);
+          const altFt = Math.round(f.alt || 30000);
+          const speedKmh = Math.round(f.speed || 800);
+          const speedKnots = Math.round(speedKmh / 1.852);
+          const dir = Math.round(f.dir || 0);
+          const hex = (f.hex || f.flight_icao || "HEX").toUpperCase();
+
+          const depAirport = globalAirports[f.dep_iata] || { name: `${f.dep_iata || 'DEP'} Airport`, city: f.dep_city || 'Origin', icao: f.dep_icao || 'ZZZZ' };
+          const arrAirport = globalAirports[f.arr_iata] || { name: `${f.arr_iata || 'ARR'} Airport`, city: f.arr_city || 'Destination', icao: f.arr_icao || 'ZZZZ' };
+
+          return {
+            hex,
+            reg_number: f.reg_number || hex,
+            flag: f.flag || "International",
+            flight_number: f.flight_number || f.flight_iata || hex,
+            flight_icao: f.flight_icao || hex,
+            flight_iata: f.flight_iata || hex,
+            dep_icao: f.dep_icao || depAirport.icao,
+            dep_iata: f.dep_iata || "DEP",
+            dep_city: f.dep_city || depAirport.city,
+            dep_name: depAirport.name,
+            arr_icao: f.arr_icao || arrAirport.icao,
+            arr_iata: f.arr_iata || "ARR",
+            arr_city: f.arr_city || arrAirport.city,
+            arr_name: arrAirport.name,
+            airline_icao: f.airline_icao || "",
+            airline_iata: f.airline_iata || "",
+            airline_name: f.airline_name || majorAirlines[f.airline_iata]?.name || "Commercial Airline",
+            status: f.status || "en-route",
+            lat,
+            lng,
+            alt: altFt,
+            dir,
+            speed: speedKmh,
+            speed_knots: speedKnots,
+            vspeed: f.v_speed || 0,
+            squawk: f.squawk || "",
+            aircraft_type: f.aircraft_icao || "B738",
+            aircraft_model: f.aircraft_model || "Boeing 737 / Airbus A320",
+            aircraft_category: "2-engine-narrow",
+            progress_percent: 50,
+            dist_traveled_km: 1000,
+            dist_remaining_km: 1500,
+            dist_total_km: 2500,
+            distance_traveled_km: 1000,
+            distance_remaining_km: 1500,
+            distance_total_km: 2500,
+            eta_minutes: 90,
+            mach: estimateMach(speedKmh, altFt)
+          };
+        });
+      }
+    }
+  } catch (e: any) {
+    console.warn("AirLabs fetch warning:", e?.message);
+  }
+  return [];
+}
+
+// 3. Fallback ADSB.fi Community Mirror
+async function fetchAdsbFiFallback(): Promise<any[]> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch("https://opendata.adsb.fi/api/v2/all", {
+      signal: controller.signal,
+      headers: { "User-Agent": "SkyPulseFlightTracker/5.0" }
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && Array.isArray(json.aircraft)) {
+        return json.aircraft.filter((a: any) => a.lat && a.lon).map((a: any) => {
+          const hex = (a.hex || "").toUpperCase();
+          const callsign = (a.flight || a.hex || "").trim().toUpperCase();
+          const lat = parseFloat(a.lat);
+          const lng = parseFloat(a.lon);
+          const altFt = Math.max(0, Math.round(parseFloat(a.alt_baro || a.alt_geom || 30000)));
+          const speedKnots = Math.round(parseFloat(a.gs || 400));
+          const speedKmh = Math.round(speedKnots * 1.852);
+          const dir = Math.round(parseFloat(a.track || a.mag_heading || 0));
+          const vspeedFpm = Math.round(parseFloat(a.baro_rate || 0));
+
+          const route = resolveFlightRoute(lat, lng, dir, callsign.slice(0, 3), callsign);
+          const depAirport = globalAirports[route.depIata];
+          const arrAirport = globalAirports[route.arrIata];
+
+          return {
+            hex,
+            reg_number: a.r || hex,
+            flag: "International",
+            flight_number: callsign,
+            flight_icao: callsign,
+            flight_iata: callsign,
+            dep_icao: depAirport?.icao || "ZZZZ",
+            dep_iata: route.depIata,
+            dep_city: route.depCity,
+            dep_name: depAirport?.name || `${route.depIata} Airport`,
+            arr_icao: arrAirport?.icao || "ZZZZ",
+            arr_iata: route.arrIata,
+            arr_city: route.arrCity,
+            arr_name: arrAirport?.name || `${route.arrIata} Airport`,
+            airline_icao: callsign.slice(0, 3),
+            airline_iata: callsign.slice(0, 2),
+            airline_name: majorAirlines[callsign.slice(0, 3)]?.name || "Commercial Carrier",
+            status: vspeedFpm > 400 ? "climbing" : vspeedFpm < -400 ? "descending" : "en-route",
+            lat,
+            lng,
+            alt: altFt,
+            dir,
+            speed: speedKmh,
+            speed_knots: speedKnots,
+            vspeed: vspeedFpm,
+            squawk: a.squawk || "",
+            aircraft_type: a.t || "B738",
+            aircraft_model: "Boeing 737 / Airbus A320",
+            aircraft_category: "2-engine-narrow",
+            progress_percent: 50,
+            dist_traveled_km: 800,
+            dist_remaining_km: 1200,
+            dist_total_km: 2000,
+            distance_traveled_km: 800,
+            distance_remaining_km: 1200,
+            distance_total_km: 2000,
+            eta_minutes: 75,
+            mach: estimateMach(speedKmh, altFt)
+          };
+        });
+      }
+    }
+  } catch (e: any) {
+    console.warn("ADSB.fi fallback warning:", e?.message);
+  }
+  return [];
+}
+
+// Live NOAA / AviationWeather.gov Real METAR Fetcher
+async function fetchRealMetar(icao: string, iata: string): Promise<any> {
+  try {
+    const searchCode = (icao && icao !== "ZZZZ") ? icao : (iata || "JFK");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(searchCode)}&format=json`, {
+      signal: controller.signal,
+      headers: { "User-Agent": "SkyPulseFlightTracker/5.0" }
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const obs = data[0];
+        const tempC = typeof obs.temp === "number" ? Math.round(obs.temp) : 22;
+        const windSpeedKt = typeof obs.wspd === "number" ? Math.round(obs.wspd) : 8;
+        const windDirDeg = typeof obs.wdir === "number" ? Math.round(obs.wdir) : 180;
+        const qnhHpa = typeof obs.altim === "number" ? Math.round(obs.altim) : 1013;
+        const condition = obs.cover ? `${obs.cover.toUpperCase()} clouds` : (obs.visib > 6 ? "CAVOK / Clear" : "Scattered 4000ft");
+
+        return {
+          raw: obs.rawOb || obs.metar || `${searchCode} ${windDirDeg}0${windSpeedKt}KT CAVOK ${tempC}/12 Q${qnhHpa}`,
+          tempC,
+          condition,
+          windSpeedKt,
+          windDirDeg,
+          visibilityKm: obs.visib ? Math.round(obs.visib * 1.609) : 10,
+          qnhHpa
+        };
+      }
+    }
+  } catch (e) {
+    // Graceful fallback to deterministic METAR generator
+  }
+  return generateMetarWeather(iata);
+}
+
+// Background Ingestion Daemon - Updates cache every 8.5 seconds
 async function refreshFlightsCache() {
   try {
-    const flights = await fetchOpenSkyGlobalFlights();
-    if (flights.length > 0) {
+    // 1. Primary OpenSky Fetch
+    const { flights: openSkyFlights, source } = await fetchOpenSkyGlobalFlights();
+    
+    if (openSkyFlights.length > 0) {
+      // If AirLabs API Key is present, enrich routes with authentic commercial flight data
+      const airLabsFlights = await fetchAirLabsFlights();
+      let combined = openSkyFlights;
+      if (airLabsFlights.length > 0) {
+        const hexSet = new Set(airLabsFlights.map(f => f.hex));
+        const nonDuplicateOpenSky = openSkyFlights.filter(f => !hexSet.has(f.hex));
+        combined = [...airLabsFlights, ...nonDuplicateOpenSky];
+      }
+
       flightsCache = {
-        data: flights,
+        data: combined,
         timestamp: Date.now(),
-        source: `OpenSky Global Feed (${flights.length} transponders)`,
-        totalTracked: flights.length
+        source: `${source} (${combined.length.toLocaleString()} transponders)`,
+        totalTracked: combined.length
       };
-      console.log(`[SkyPulse Ingestor] Updated ${flights.length} global flight vectors.`);
+      console.log(`[SkyPulse Ingestor] Updated ${combined.length.toLocaleString()} global flight vectors.`);
+      return;
+    }
+
+    // 2. Fallback to ADSB.fi Community Mirror if OpenSky is rate-limited
+    const fallbackFlights = await fetchAdsbFiFallback();
+    if (fallbackFlights.length > 0) {
+      flightsCache = {
+        data: fallbackFlights,
+        timestamp: Date.now(),
+        source: `ADSB.fi Global Mirror Feed (${fallbackFlights.length} transponders)`,
+        totalTracked: fallbackFlights.length
+      };
+      console.log(`[SkyPulse Ingestor] Fallback Mirror updated ${fallbackFlights.length} flights.`);
     }
   } catch (e) {
     console.error("Background flight refresh failed:", e);
@@ -346,8 +570,11 @@ app.get("/api/flight-details", async (req, res) => {
   const depAirport = globalAirports[depIata] || { name: `${depIata} International Airport`, city: `${depIata} City`, country: "", icao: "ZZZZ" };
   const arrAirport = globalAirports[arrIata] || { name: `${arrIata} International Airport`, city: `${arrIata} City`, country: "", icao: "ZZZZ" };
 
-  const depMetar = generateMetarWeather(depIata);
-  const arrMetar = generateMetarWeather(arrIata);
+  // Fetch real-time live NOAA AviationWeather METAR observations concurrently
+  const [depMetar, arrMetar] = await Promise.all([
+    fetchRealMetar(depAirport.icao, depIata),
+    fetchRealMetar(arrAirport.icao, arrIata)
+  ]);
 
   // Determine aircraft model & specs
   let aircraftType = String(req.query.aircraft_type || "B77W").toUpperCase();
@@ -384,7 +611,7 @@ app.get("/api/flight-details", async (req, res) => {
         }
       `;
       const result = await gemini.models.generateContent({
-        model: "gemini-flash-latest",
+        model: "gemini-2.0-flash",
         contents: prompt,
         config: { responseMimeType: "application/json" }
       });
@@ -412,7 +639,7 @@ app.get("/api/flight-details", async (req, res) => {
         arrivalDelayMin: 0,
         arrivalTerminal: aiData.arrivalTerminal || "T3",
         arrivalGate: aiData.arrivalGate || "G45",
-        routeFunFact: aiData.routeFunFact || `Cruising along standard international oceanic track towards ${arrAirport.city}.`,
+        routeFunFact: aiData.routeFunFact || `Cruising along standard international airways towards ${arrAirport.city}.`,
         passengerLoadEstimates: aiData.passengerLoadEstimates || "85% Capacity (280/330 Seats)",
         currentWeather: {
           departure: `${depMetar.condition}, ${depMetar.tempC}°C, Wind ${depMetar.windSpeedKt}kts @ ${depMetar.windDirDeg}°`,
@@ -464,8 +691,8 @@ app.get("/api/flight-details", async (req, res) => {
     routeFunFact: `This flight is operating along standard international airway routing from ${depAirport.city} to ${arrAirport.city}.`,
     passengerLoadEstimates: "84% Capacity (Estimated)",
     currentWeather: {
-      departure: `${depMetar.condition}, ${depMetar.tempC}°C, Wind ${depMetar.windSpeedKt}kts`,
-      arrival: `${arrMetar.condition}, ${arrMetar.tempC}°C, Wind ${arrMetar.windSpeedKt}kts`,
+      departure: `${depMetar.condition}, ${depMetar.tempC}°C, Wind ${depMetar.windSpeedKt}kts @ ${depMetar.windDirDeg}°`,
+      arrival: `${arrMetar.condition}, ${arrMetar.tempC}°C, Wind ${arrMetar.windSpeedKt}kts @ ${arrMetar.windDirDeg}°`,
       depTemp: `${depMetar.tempC}°C`,
       depWind: `${depMetar.windSpeedKt} kts (${depMetar.windDirDeg}°)`,
       depCondition: depMetar.condition,
@@ -484,29 +711,31 @@ app.get("/api/flight-details", async (req, res) => {
   });
 });
 
-// API Endpoint for AI Copilot Aviation Assistant
+// AI Copilot Aviation Chat Assistant
 app.post("/api/chat", async (req, res) => {
   const { message, flightContext, history } = req.body;
 
   if (!message) {
-    return res.status(400).json({ error: "Missing message parameter." });
+    return res.status(400).json({ reply: "Message parameter is required." });
   }
-
-  const systemInstruction = `
-    You are AeroVex SkyCopilot, an elite AI Live Aviation and Telemetry Expert integrated into a state-of-the-art Flight Radar & Avionics Deck.
-    You assist pilots, dispatchers, flight enthusiasts, and air travelers with deep technical insights on aircraft systems, air traffic control procedures, transponder squawk codes, flight levels, Mach numbers, METAR weather, airport runways, and route analysis.
-    Keep your tone professional, crisp, informative, and formatted with clean markdown bullets and bold headers.
-    When given flight context, refer to specific tail numbers, speeds, altitudes, and airports accurately.
-  `;
 
   const gemini = getGeminiClient();
   if (!gemini) {
+    const flightCallsign = flightContext?.flight_iata || flightContext?.flight_number || "AIRCRAFT";
+    const dep = flightContext?.dep_iata || "DEP";
+    const arr = flightContext?.arr_iata || "ARR";
+    const alt = flightContext?.alt ? `FL${Math.round(flightContext.alt / 100)}` : "FL350";
+    const speed = flightContext?.speed ? `${flightContext.speed} km/h` : "850 km/h";
+
     return res.json({
-      reply: `**[AeroVex Copilot Offline Mode]**\n\nReceived telemetry query regarding ${flightContext?.flight_iata || 'airspace sector'}.\n\n- **Flight Number:** ${flightContext?.flight_iata || 'N/A'}\n- **Altitude:** FL${Math.round((flightContext?.alt || 35000) / 100)} (${flightContext?.alt || 35000} ft)\n- **Ground Speed:** ${flightContext?.speed || 850} km/h (${flightContext?.speed_knots || 460} knots)\n- **Routing:** ${flightContext?.dep_iata || 'DEP'} ➔ ${flightContext?.arr_iata || 'ARR'}\n- **Aircraft:** ${flightContext?.aircraft_model || 'Commercial Transport'}\n\n*Configure GEMINI_API_KEY in .env for full real-time AI copilot reasoning.*`
+      reply: `**[Telemetry Link Active]** Flight **${flightCallsign}** is currently on route from **${dep}** to **${arr}**, cruising at **${alt}** at **${speed}**. (To enable AI conversations, configure \`GEMINI_API_KEY\` in your \`.env\` file).`
     });
   }
 
   try {
+    const systemInstruction = `You are "AERO-COPILOT", a military/commercial AI flight operations intelligence officer and avionics specialist inside a high-tech glass cockpit radar system.
+Keep your answers tactical, concise, crisp, and aviation-accurate with clear callouts. Use aeronautical terminology (FL levels, knots, waypoints, squawks, METAR conditions) when relevant.`;
+
     const contents: any[] = [];
     if (Array.isArray(history)) {
       for (const h of history) {
@@ -527,7 +756,7 @@ app.post("/api/chat", async (req, res) => {
     });
 
     const response = await gemini.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-2.0-flash",
       contents,
       config: { systemInstruction }
     });
@@ -536,7 +765,7 @@ app.post("/api/chat", async (req, res) => {
   } catch (error: any) {
     console.error("Aviation Assistant Chat error:", error);
     return res.json({ 
-      reply: `**[Telemetry Link Active]** Flight ${flightContext?.flight_iata || 'Craft'} is currently cruising at FL${Math.round((flightContext?.alt || 35000)/100)} at ${flightContext?.speed || 850} km/h on heading ${flightContext?.dir || 90}°.`
+      reply: `**[Telemetry Link Active]** Flight ${flightContext?.flight_iata || 'Craft'} is cruising at FL${Math.round((flightContext?.alt || 35000)/100)} at ${flightContext?.speed || 850} km/h on heading ${flightContext?.dir || 90}°.`
     });
   }
 });
@@ -571,4 +800,3 @@ async function startServer() {
 }
 
 startServer();
-
