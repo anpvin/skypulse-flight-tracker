@@ -17,9 +17,9 @@
 
 [Key Features](#-key-features) •
 [Quick Start](#-quick-start) •
-[Publish to GitHub](#-publishing-to-github-guide) •
-[Architecture](#-architecture) •
-[Configuration](#-configuration)
+[Architecture](#-project-structure) •
+[Configuration](#-supported-api-keys--data-providers) •
+[Website (naufal.in)](https://naufal.in)
 
 </div>
 
@@ -250,5 +250,5 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ---
 
 <div align="center">
-  <sub>Built with precision for aviators, flight simmers, and aviation enthusiasts.</sub>
+  <sub>Maintained and developed by <a href="https://naufal.in"><strong>naufal.in</strong></a>. Built with precision for aviators, simmers, and aviation enthusiasts.</sub>
 </div>
