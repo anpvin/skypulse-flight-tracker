@@ -164,45 +164,6 @@ npm start
 
 ---
 
-## 🌐 Publishing to GitHub (Step-by-Step Guide)
-
-Follow these exact steps to publish this repository to your GitHub account:
-
-### Step 1: Initialize Git in your project folder
-Open your terminal in the project directory (`flight`) and run:
-```bash
-git init
-```
-
-### Step 2: Stage and commit all files
-```bash
-git add .
-git commit -m "feat: initial release of SkyPulse Real-Time Flight Tracker & Glass Cockpit"
-```
-
-### Step 3: Rename your default branch to `main`
-```bash
-git branch -M main
-```
-
-### Step 4: Create a New Repository on GitHub
-1. Go to [GitHub.com](https://github.com) and click the **`+`** icon (top right) ➔ **New repository**.
-2. **Repository Name**: `skypulse-flight-tracker` *(or `flight-tracker`)*
-3. **Description**: `Real-time global flight tracker and glass cockpit radar powered by live ADS-B Mode-S transponders, 60fps dead-reckoning, and avionics telemetry.`
-4. Choose **Public**.
-5. **Do NOT** check "Add a README file" (we already have one).
-6. Click **Create repository**.
-
-### Step 5: Link your local repository and push
-Copy the URL of your new GitHub repository and run:
-```bash
-git remote add origin https://github.com/YOUR_USERNAME/skypulse-flight-tracker.git
-git push -u origin main
-```
-
-*(Replace `YOUR_USERNAME` with your actual GitHub username).*
-
----
 
 ## 📂 Project Structure
 
