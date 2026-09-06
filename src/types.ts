@@ -105,4 +105,43 @@ export interface AirportInfo {
   lat: number;
   lng: number;
   altFt?: number;
+  runways?: string[];
+  timezone?: string;
+  hubFor?: string[];
+}
+
+export interface AtcTransmission {
+  id: string;
+  timestamp: string;
+  callsign: string;
+  frequency: string;
+  station: "TOWER" | "GROUND" | "APPROACH" | "CENTER" | "OCEANIC" | "RADAR";
+  sender: "ATC" | "PILOT";
+  message: string;
+  flightLevel?: number;
+  heading?: number;
+  squawk?: string;
+  isEmergency?: boolean;
+}
+
+export interface EmergencyAlert {
+  hex: string;
+  callsign: string;
+  squawk: "7700" | "7600" | "7500" | string;
+  type: "GENERAL_EMERGENCY" | "RADIO_FAILURE" | "HIJACK_UNLAWFUL" | string;
+  lat: number;
+  lng: number;
+  alt: number;
+  timestamp: number;
+  airline: string;
+  route: string;
+}
+
+export interface TcasWarning {
+  flight1: Flight;
+  flight2: Flight;
+  horizontalDistanceNm: number;
+  verticalDistanceFt: number;
+  severity: "TA" | "RA"; // Traffic Advisory vs Resolution Advisory
+  advisoryText: string;
 }

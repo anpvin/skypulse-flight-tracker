@@ -644,3 +644,166 @@ export function getFlightTimes(hexOrIata: string): { depTime: string; arrTime: s
   };
 }
 
+// Generate realistic simulated ATC radio transmission for selected flight
+export function generateAtcTransmission(flight: Flight): {
+  id: string;
+  callsign: string;
+  frequency: string;
+  station: string;
+  sender: "ATC" | "PILOT";
+  message: string;
+  voiceText: string;
+} {
+  const callsign = flight.flight_iata || flight.flight_number || flight.hex;
+  const fl = Math.round((flight.alt || 30000) / 100);
+  const heading = flight.dir || 90;
+  const vspeed = flight.vspeed || 0;
+
+  const frequencies = ["124.500", "128.850", "132.050", "119.700", "135.225"];
+  const freq = frequencies[Math.abs(flight.hex.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % frequencies.length];
+
+  let message = "";
+  let voiceText = "";
+
+  if (vspeed > 400) {
+    message = `${callsign}, radar contact. Climb and maintain FL${fl + 20}, turn heading ${heading}°, squawk ${flight.squawk || '2415'}.`;
+    voiceText = `${callsign}, radar contact. Climb and maintain Flight Level ${fl + 20}, turn heading ${heading} degrees.`;
+  } else if (vspeed < -400) {
+    message = `${callsign}, descend and maintain FL${Math.max(80, fl - 30)}, expedite descent passing FL${fl}. Contact Approach on ${freq}.`;
+    voiceText = `${callsign}, descend and maintain Flight Level ${Math.max(80, fl - 30)}. Contact Approach on ${freq}.`;
+  } else if (flight.status === "ground") {
+    message = `${callsign}, taxi to runway via taxiway Alpha, Bravo. Hold short of active runway, monitor tower on 118.700.`;
+    voiceText = `${callsign}, taxi to runway via Alpha Bravo. Hold short, monitor tower.`;
+  } else {
+    message = `${callsign}, direct waypoint MERIT, maintain FL${fl}, speed ${flight.speed_knots || 450} knots. Altimeter 29.92.`;
+    voiceText = `${callsign}, direct waypoint MERIT, maintain Flight Level ${fl}, speed ${flight.speed_knots || 450} knots.`;
+  }
+
+  return {
+    id: `atc-${Date.now()}-${flight.hex}`,
+    callsign,
+    frequency: freq,
+    station: vspeed < -400 ? "APPROACH" : fl > 240 ? "CENTER CONTROL" : "RADAR DEPARTURE",
+    sender: "ATC",
+    message,
+    voiceText
+  };
+}
+
+// Speak ATC Voice Radio transmission via Web Speech API
+export function speakAtcRadio(text: string): boolean {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return false;
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1.05;
+  utterance.pitch = 0.95;
+  utterance.volume = 0.9;
+
+  // Prefer English voice if available
+  const voices = window.speechSynthesis.getVoices();
+  const enVoice = voices.find(v => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("English")));
+  if (enVoice) utterance.voice = enVoice;
+
+  window.speechSynthesis.speak(utterance);
+  return true;
+}
+
+// Detect real-time TCAS proximity conflicts between active flights
+export function detectTcasConflicts(flights: Flight[], maxAlerts: number = 5): Array<{
+  flight1: Flight;
+  flight2: Flight;
+  distNm: number;
+  altDiffFt: number;
+  severity: "TA" | "RA";
+}> {
+  const alerts: Array<{ flight1: Flight; flight2: Flight; distNm: number; altDiffFt: number; severity: "TA" | "RA" }> = [];
+  const checked = new Set<string>();
+
+  for (let i = 0; i < Math.min(1000, flights.length); i++) {
+    const f1 = flights[i];
+    if (f1.status === "ground" || f1.alt < 3000) continue;
+
+    for (let j = i + 1; j < Math.min(1000, flights.length); j++) {
+      const f2 = flights[j];
+      if (f2.status === "ground" || f2.alt < 3000) continue;
+
+      const key = `${f1.hex}-${f2.hex}`;
+      if (checked.has(key)) continue;
+      checked.add(key);
+
+      const altDiff = Math.abs(f1.alt - f2.alt);
+      if (altDiff > 1500) continue;
+
+      const distKm = getDistanceKm(f1.lat, f1.lng, f2.lat, f2.lng);
+      const distNm = Math.round((distKm / 1.852) * 10) / 10;
+
+      if (distNm < 6) {
+        alerts.push({
+          flight1: f1,
+          flight2: f2,
+          distNm,
+          altDiffFt: altDiff,
+          severity: (distNm < 3 && altDiff < 800) ? "RA" : "TA"
+        });
+        if (alerts.length >= maxAlerts) return alerts;
+      }
+    }
+  }
+
+  return alerts;
+}
+
+// Detect emergency squawks (7700 = General Emergency, 7600 = Radio Failure, 7500 = Hijack)
+export function detectEmergencySquawks(flights: Flight[]): Flight[] {
+  return flights.filter(f => f.squawk === "7700" || f.squawk === "7600" || f.squawk === "7500");
+}
+
+// Download Flight Dossier as JSON / Text summary
+export function downloadFlightDossier(flight: Flight, details: any): void {
+  const report = {
+    title: `SkyPulse Flight Telemetry Dossier - ${flight.flight_iata || flight.flight_number || flight.hex}`,
+    generatedAt: new Date().toISOString(),
+    flight: {
+      callsign: flight.flight_iata || flight.flight_number,
+      hex: flight.hex,
+      registration: flight.reg_number,
+      airline: flight.airline_name || details?.airlineName,
+      aircraftModel: flight.aircraft_model || details?.aircraftModel,
+      coordinates: { lat: flight.lat, lng: flight.lng },
+      altitudeFeet: flight.alt,
+      groundSpeedKmh: flight.speed,
+      speedKnots: flight.speed_knots,
+      headingDegrees: flight.dir,
+      verticalRateFpm: flight.vspeed,
+      squawk: flight.squawk,
+      status: flight.status
+    },
+    routing: {
+      origin: {
+        iata: flight.dep_iata,
+        city: flight.dep_city || details?.departureCity,
+        airport: details?.departureAirportFullName
+      },
+      destination: {
+        iata: flight.arr_iata,
+        city: flight.arr_city || details?.arrivalCity,
+        airport: details?.arrivalAirportFullName
+      },
+      progressPercent: flight.progress_percent,
+      distanceTraveledKm: flight.distance_traveled_km,
+      distanceRemainingKm: flight.distance_remaining_km
+    },
+    weather: details?.currentWeather,
+    aircraftSpecifications: details?.aircraftSpecs
+  };
+
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `SkyPulse_${flight.flight_iata || flight.hex}_Dossier.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+

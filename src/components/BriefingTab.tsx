@@ -4,10 +4,10 @@ import {
   Plane, Compass, Navigation, Thermometer, CloudRain, 
   ChevronDown, ChevronUp, Radio, Activity, Wind, 
   Gauge, ShieldCheck, Zap, AlertTriangle, ArrowUpRight,
-  ArrowDownRight, Eye, Bot, Cpu, Sparkles 
+  ArrowDownRight, Eye, Bot, Cpu, Sparkles, Volume2, Download 
 } from "lucide-react";
 import { Flight, FlightDetailed } from "../types";
-import { getAirportCity, getFlightTimes, getBarometricPressure, estimateMach, getAltitudeColor } from "../utils";
+import { getAirportCity, getFlightTimes, getBarometricPressure, estimateMach, getAltitudeColor, speakAtcRadio, downloadFlightDossier } from "../utils";
 
 function SVGGauge({ title, value, unit, percent, color, icon, subtitle }: any) {
   const radius = 28;
@@ -179,16 +179,39 @@ export function BriefingTab({
           {/* Main Left Avionics Area */}
           <div className="flex-1 flex flex-col overflow-y-auto pr-1 space-y-4 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
             {/* Quick Navigation Action Header */}
-            <div className="flex items-center justify-between pb-1 font-mono text-xs shrink-0">
-              <button
-                onClick={() => setActiveTab("search")}
-                className="px-3.5 py-2 glass-panel text-slate-300 hover:text-white rounded-xl font-bold text-[10px] flex items-center gap-1.5 transition-colors cursor-pointer uppercase border border-white/10"
-              >
-                ← FLIGHT BOARD
-              </button>
+            <div className="flex flex-wrap items-center justify-between pb-1 font-mono text-xs shrink-0 gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab("search")}
+                  className="px-3 py-1.5 glass-panel text-slate-300 hover:text-white rounded-xl font-bold text-[10px] flex items-center gap-1.5 transition-colors cursor-pointer uppercase border border-white/10"
+                >
+                  ← FLIGHT BOARD
+                </button>
+                <button
+                  onClick={() => {
+                    const fl = Math.round((selectedFlight.alt || 30000) / 100);
+                    const callsign = selectedFlight.flight_iata || selectedFlight.hex;
+                    speakAtcRadio(`${callsign}, climb and maintain Flight Level ${fl}, heading ${selectedFlight.dir || 90} degrees. Altimeter 29.92.`);
+                  }}
+                  className="px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/60 text-emerald-300 hover:text-white rounded-xl font-extrabold text-[10px] flex items-center gap-1.5 transition-colors cursor-pointer uppercase border border-emerald-500/40 shadow-lg shadow-emerald-500/10"
+                  title="Speak Simulated Radio Clearance"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>PLAY RADIO CLEARANCE</span>
+                </button>
+                <button
+                  onClick={() => downloadFlightDossier(selectedFlight, selectedFlightDetails)}
+                  className="px-3 py-1.5 bg-cyan-600/30 hover:bg-cyan-600/60 text-cyan-300 hover:text-white rounded-xl font-extrabold text-[10px] flex items-center gap-1.5 transition-colors cursor-pointer uppercase border border-cyan-500/40 shadow-lg shadow-cyan-500/10"
+                  title="Download Flight Dossier JSON"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>EXPORT DOSSIER</span>
+                </button>
+              </div>
+
               <button
                 onClick={() => setActiveTab("radar")}
-                className="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/60 text-blue-300 hover:text-white rounded-xl font-extrabold text-[10px] flex items-center gap-1.5 transition-colors cursor-pointer uppercase border border-blue-500/40 shadow-lg shadow-blue-500/20"
+                className="px-4 py-1.5 bg-blue-600/30 hover:bg-blue-600/60 text-blue-300 hover:text-white rounded-xl font-extrabold text-[10px] flex items-center gap-1.5 transition-colors cursor-pointer uppercase border border-blue-500/40 shadow-lg shadow-blue-500/20"
               >
                 TACTICAL RADAR VIEW →
               </button>

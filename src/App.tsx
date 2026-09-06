@@ -5,13 +5,15 @@ import {
   Plane, Search, Compass, Navigation, Radio, 
   MapPin, Activity, ShieldCheck, BarChart2, Layers,
   CloudRain, Crosshair, RefreshCw, X, Sliders, 
-  ExternalLink, Sparkles
+  ExternalLink, Sparkles, Building2, Volume2 
 } from "lucide-react";
 import { Flight, FlightDetailed } from "./types";
 import { RadarTab } from "./components/RadarTab";
 import { SearchTab } from "./components/SearchTab";
 import { BriefingTab } from "./components/BriefingTab";
 import { AnalyticsTab } from "./components/AnalyticsTab";
+import { AtcCommsTab } from "./components/AtcCommsTab";
+import { AirportExplorerTab } from "./components/AirportExplorerTab";
 import { 
   getAirportCoords, getAirportFullName, getAirportCity, 
   getAirlineName, getFlightTimes, getBarometricPressure, 
@@ -660,11 +662,13 @@ export default function App() {
         </div>
         
         {/* Right: Modern Navigation Tabs */}
-        <nav className="flex items-center gap-1.5">
+        <nav className="flex items-center gap-1.5 overflow-x-auto">
           {[
             { id: "radar", label: "TACTICAL RADAR", icon: MapPin },
             { id: "search", label: "FLIGHT BOARD", icon: Search },
             { id: "briefing", label: "AVIONICS DECK", icon: Plane },
+            { id: "comms", label: "ATC COMMS", icon: Radio },
+            { id: "airports", label: "AIRPORT HUBS", icon: Building2 },
             { id: "analytics", label: "SPECTRUM STATS", icon: BarChart2 }
           ].map(tab => (
             <button 
@@ -673,7 +677,7 @@ export default function App() {
                 setActiveTab(tab.id);
                 if (tab.id === "radar") fetchFlights();
               }} 
-              className={`px-3.5 py-1.5 text-[10px] font-mono font-black tracking-wider rounded-xl cursor-pointer select-none border transition-all ${
+              className={`px-3 py-1.5 text-[10px] font-mono font-black tracking-wider rounded-xl cursor-pointer select-none border transition-all whitespace-nowrap ${
                 activeTab === tab.id 
                   ? "bg-blue-600 text-white border-blue-400/60 shadow-lg shadow-blue-600/30" 
                   : "bg-transparent border-transparent text-slate-400 hover:text-white hover:bg-white/5"
@@ -706,6 +710,9 @@ export default function App() {
           onSelectFlight={(flight: Flight) => {
             setSelectedFlight(flight);
             fetchFlightDetails(flight);
+            if (mapRef.current) {
+              mapRef.current.setView([flight.lat, flight.lng], 7);
+            }
           }}
         />
 
@@ -726,7 +733,12 @@ export default function App() {
           selectedFlight={selectedFlight}
           setSelectedFlight={setSelectedFlight}
           fetchFlightDetails={fetchFlightDetails}
-          setActiveTabMain={setActiveTab}
+          setActiveTabMain={(tab: string) => {
+            setActiveTab(tab);
+            if (tab === "radar" && selectedFlight && mapRef.current) {
+              mapRef.current.setView([selectedFlight.lat, selectedFlight.lng], 7);
+            }
+          }}
         />
 
         <BriefingTab 
@@ -743,6 +755,28 @@ export default function App() {
           briefingMapContainerRef={briefingMapContainerRef}
           tileMode={tileMode}
           setTileMode={setTileMode}
+          setActiveTab={setActiveTab}
+        />
+
+        <AtcCommsTab 
+          activeTab={activeTab}
+          flights={flights}
+          selectedFlight={selectedFlight}
+          onSelectFlight={(flight: Flight) => {
+            setSelectedFlight(flight);
+            fetchFlightDetails(flight);
+          }}
+          setActiveTab={setActiveTab}
+        />
+
+        <AirportExplorerTab 
+          activeTab={activeTab}
+          flights={flights}
+          onSelectAirport={(iata: string, lat: number, lng: number) => {
+            if (mapRef.current) {
+              mapRef.current.setView([lat, lng], 8);
+            }
+          }}
           setActiveTab={setActiveTab}
         />
 
@@ -769,11 +803,13 @@ export default function App() {
       </footer>
 
       {/* Mobile Glass Bottom Navigation */}
-      <nav className="md:hidden flex items-center justify-around px-2 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] glass-panel border-t border-white/10 shrink-0">
+      <nav className="md:hidden flex items-center justify-around px-1 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] glass-panel border-t border-white/10 shrink-0 overflow-x-auto">
         {[
           { id: "radar", icon: MapPin, label: "Radar" },
           { id: "search", icon: Search, label: "Board" },
           { id: "briefing", icon: Plane, label: "Avionics" },
+          { id: "comms", icon: Radio, label: "ATC" },
+          { id: "airports", icon: Building2, label: "Hubs" },
           { id: "analytics", icon: BarChart2, label: "Stats" },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -782,12 +818,12 @@ export default function App() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center justify-center w-16 h-12 rounded-xl transition-all cursor-pointer ${
+              className={`flex flex-col items-center justify-center min-w-[52px] h-12 rounded-xl transition-all cursor-pointer ${
                 isActive ? "text-cyan-300 bg-cyan-500/15 border border-cyan-500/30" : "text-slate-500 hover:text-slate-300"
               }`}
             >
-              <Icon className={`w-4 h-4 mb-1 ${isActive ? "glow-cyan" : ""}`} />
-              <span className="text-[9px] font-black tracking-wider font-mono uppercase">{tab.label}</span>
+              <Icon className={`w-4 h-4 mb-0.5 ${isActive ? "glow-cyan" : ""}`} />
+              <span className="text-[8px] font-black tracking-wider font-mono uppercase">{tab.label}</span>
             </button>
           );
         })}

@@ -7,7 +7,7 @@ import {
   Activity, Eye, Maximize2 
 } from "lucide-react";
 import { Flight, FlightDetailed } from "../types";
-import { getAltitudeColor, getAirlineName, getAirportCity } from "../utils";
+import { getAltitudeColor, getAirlineName, getAirportCity, detectEmergencySquawks } from "../utils";
 
 interface RadarTabProps {
   activeTab: string;
@@ -41,7 +41,10 @@ export function RadarTab({
   selectedFlight,
   selectedFlightDetails,
   setActiveTab,
-  closeDetailsPanel
+  closeDetailsPanel,
+  minAltitudeFilter,
+  setMinAltitudeFilter,
+  onSelectFlight
 }: RadarTabProps) {
   const [isHudExpanded, setIsHudExpanded] = useState(false);
   const [showRangeRings, setShowRangeRings] = useState(true);
@@ -69,6 +72,7 @@ export function RadarTab({
       .slice(0, 8);
   }, [flights, radarSearchQuery]);
 
+  const emergencyFlights = useMemo(() => detectEmergencySquawks(flights), [flights]);
   const selectedAltColor = selectedFlight ? getAltitudeColor(selectedFlight.alt) : { hex: "#38bdf8" };
 
   return (
@@ -79,6 +83,20 @@ export function RadarTab({
     >
       {/* Underlying Leaflet Map Engine */}
       <div ref={mapContainerRef} className="w-full h-full absolute inset-0 z-0 bg-[#07090e]" />
+
+      {/* Live Squawk 7700 Emergency Alert Beacon */}
+      {emergencyFlights.length > 0 && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 bg-red-600/90 border border-red-400 text-white font-mono text-xs font-black rounded-full shadow-[0_0_25px_rgba(239,68,68,0.8)] animate-pulse">
+          <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+          <span>EMERGENCY SQUAWK 7700 DETECTED: {emergencyFlights[0].flight_iata || emergencyFlights[0].hex}</span>
+          <button
+            onClick={() => onSelectFlight && onSelectFlight(emergencyFlights[0])}
+            className="ml-2 px-2.5 py-0.5 bg-black text-white text-[10px] rounded-full hover:bg-white hover:text-black cursor-pointer uppercase transition-colors"
+          >
+            INTERCEPT
+          </button>
+        </div>
+      )}
 
       {/* Rotating Cyber Radar Sweeper Beam */}
       <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden opacity-25">
@@ -108,7 +126,7 @@ export function RadarTab({
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
           </span>
-          <span>AERO-VEX ADS-B RADAR</span>
+          <span>SKYPULSE ADS-B RADAR</span>
         </div>
         
         <div className="px-3 py-1.5 glass-panel-subtle rounded-xl text-slate-300 text-[10px] font-mono flex items-center gap-2 shadow-lg">

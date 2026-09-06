@@ -39,24 +39,37 @@
   - 🔴 **Ground / Taxi**: Alert Red (`#ef4444`)
 - **Dual Map Layers**: High-Res Satellite Imagery (*Esri World Imagery*) & Dark Cyber Vector (*CartoDB Dark Matter*).
 - **NEXRAD Doppler Weather Radar**: Real-time precipitation reflectivity layer from the Iowa Environmental Mesonet.
+- **Live Squawk 7700 Emergency Alert Beacon**: Real-time detection and one-click radar intercept of general emergencies and radio failures.
 - **Autopilot Follow Camera**: Locks camera tracking onto any selected aircraft in flight.
 - **60 FPS Dead-Reckoning**: Smooth mathematical interpolation loop for realistic heading rotation and position advances between API polling intervals.
 
-### 🛩️ 2. Glass Cockpit Primary Flight Display (PFD)
+### 🎙️ 2. Live ATC Radio & Voice Synthesizer Deck
+- **Web Speech API Voice Synthesizer**: Generates and speaks realistic ICAO phraseology radio clearances for any active flight with one click.
+- **VHF Frequency Tuner**: Switch between Center Control (124.500 MHz), High-Altitude Oceanic (128.850 MHz), Approach Radar (119.700 MHz), Tower (118.700 MHz), and Ground Ops (121.900 MHz).
+- **TCAS Conflict Monitor**: Real-time Traffic Alert and Collision Avoidance System calculating separation minimums and altitude deltas.
+- **Emergency Squawk Monitor**: Live scanner for Squawk 7700 (General Emergency), 7600 (Radio Comm Failure), and 7500 (Unlawful Interference).
+
+### 🏢 3. 300+ Global International Airport Hubs Explorer
+- **Worldwide Hubs Browser**: Comprehensive directory of over 300 major international aerodromes across all continents.
+- **Live Airport Traffic**: Real-time active departure and arrival counts computed dynamically from global flights.
+- **NOAA METAR Weather**: Live decoded surface observations including temperature, cloud ceilings, barometric QNH, and wind vectors.
+- **One-Click Radar Jump**: Center radar camera instantly over any international airport.
+
+### 🛩️ 4. Glass Cockpit Primary Flight Display (PFD)
 - **Artificial Horizon**: Real-time Pitch and Roll attitude indicator dynamically reacting to climb/descent rates and turns.
 - **Avionics Tapes**: Barometric Altitude Tape (`ft` & `FL`), Airspeed Tape (`km/h` & `knots`), and Vertical Speed Indicator (`FPM`).
 - **Atmospheric Physics**: ISA Mach Number estimator ($M = \frac{v}{a(T)}$) and Barometric Pressure calculation (`hPa` and `inHg`).
 - **Geodesic Great-Circle Route Arcs**: Calculates and draws authentic Earth-curvature route paths, flight progress percentages, distance traveled, and distance remaining.
-- **Airport METAR Weather**: Live decoded weather observations (wind speed/direction, temperature, barometric QNH, and cloud conditions) for origin and destination hubs.
+- **Flight Dossier Export**: One-click download of complete JSON flight dossier including telemetry, routing, weather, and aircraft specifications.
 
-### 📋 3. Real-Time Flight Board & Search Engine
+### 📋 5. Real-Time Flight Board & Search Engine
 - **Card View & Dense Table View**: Switch seamlessly between interactive telemetry cards and high-density tabular flight boards.
 - **Multi-Field Search**: Search by Flight Number (e.g. `UAE201`), ICAO Callsign, Hex Code, Airline Name, Origin/Destination City, or Aircraft Model.
 - **Status Filter Chips**: Quick filtering for High Cruise (FL350+), Climbing, Descending, and Ground operations.
 - **Regional Filters**: Fast filtering across North America, Europe, Asia / Middle East, Latin America, and Oceania.
 - **Multi-Parameter Sorting**: Sort live lists by Altitude, Ground Speed, Route Progress %, or Flight Number.
 
-### 📊 4. Airspace Spectrum Analytics
+### 📊 6. Airspace Spectrum Analytics
 - **Live Fleet KPIs**: Active transponder count, global average cruise level, peak velocity, and top airline carrier.
 - **Visual Analytics**: Interactive Recharts graphs displaying carrier distribution, altitude layer histograms, and speed spectrums.
 
