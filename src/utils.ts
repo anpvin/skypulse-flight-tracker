@@ -1,4 +1,4 @@
-import { Flight, AirportInfo } from "./types";
+import { Flight, AirportInfo, AirportRunway, AirportFrequency } from "./types";
 
 // Comprehensive Global Major Airports Database (300+ major hubs)
 export const globalAirports: Record<string, AirportInfo> = {

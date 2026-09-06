@@ -136,7 +136,8 @@ export function BriefingTab({
   briefingMapContainerRef,
   tileMode,
   setTileMode,
-  setActiveTab
+  setActiveTab,
+  onOpen3DCockpit
 }: any) {
   const [isTrackRouteMinimized, setIsTrackRouteMinimized] = useState(false);
 

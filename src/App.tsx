@@ -255,6 +255,7 @@ export default function App() {
   const [weatherEnabled, setWeatherEnabled] = useState(false);
   const [followFlight, setFollowFlight] = useState(true);
   const [visibleFlightsCount, setVisibleFlightsCount] = useState(40);
+  const loadMoreIncrement = 50;
   const [cockpitFlight, setCockpitFlight] = useState<Flight | null>(null);
   const [showCockpitModal, setShowCockpitModal] = useState(false);
 
