@@ -62,7 +62,12 @@ export function SearchTab({
   const sortedList = useMemo(() => {
     let list = [...filteredFlights];
     if (selectedCategory && selectedCategory !== "all") {
-      list = list.filter(f => f.category === selectedCategory);
+      list = list.filter(f => 
+        f.category === selectedCategory ||
+        ((selectedCategory === "passenger" || selectedCategory === "commercial") && (f.category === "passenger" || f.category === "commercial")) ||
+        (selectedCategory === "military" && (f.category === "military" || f.aircraft_type === "F35" || f.aircraft_type === "F22" || f.aircraft_type === "EF2000" || f.aircraft_type === "B2")) ||
+        (selectedCategory === "helicopter" && (f.category === "helicopter" || f.aircraft_type === "H145" || f.aircraft_type === "EC135" || f.aircraft_type === "UH60"))
+      );
     }
     list.sort((a, b) => {
       let comparison = 0;
@@ -102,27 +107,37 @@ export function SearchTab({
 
           {/* Quick Category Filter Pills */}
           {setSelectedCategory && (
-            <div className="flex items-center bg-black/50 border border-white/10 rounded-xl p-1 font-mono text-[10px] font-bold overflow-x-auto gap-1">
+            <div className="flex items-center bg-black/50 border border-white/10 rounded-xl p-1 font-mono text-[10px] font-bold overflow-x-auto gap-1 max-w-[50vw]">
               {[
-                { id: "all", label: "ALL FLEET" },
-                { id: "commercial", label: "COMMERCIAL" },
-                { id: "military", label: "⚔️ MILITARY" },
-                { id: "helicopter", label: "🚁 HELICOPTERS" },
-                { id: "cargo", label: "📦 CARGO" },
-                { id: "general_aviation", label: "✈️ VIP GA" }
-              ].map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCategory(c.id)}
-                  className={`px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-extrabold ${
-                    (selectedCategory || "all") === c.id
-                      ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-black"
-                      : "text-slate-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
+                { id: "all", label: "ALL", emoji: "🌐" },
+                { id: "passenger", label: "PASSENGER", emoji: "✈️" },
+                { id: "cargo", label: "CARGO", emoji: "📦" },
+                { id: "military", label: "MILITARY", emoji: "⚔️" },
+                { id: "business_jet", label: "BIZ JETS", emoji: "💼" },
+                { id: "general_aviation", label: "GA", emoji: "🛩️" },
+                { id: "helicopter", label: "HELIS", emoji: "🚁" },
+                { id: "lighter_than_air", label: "AIRSHIPS", emoji: "🎈" },
+                { id: "glider", label: "GLIDERS", emoji: "🪂" },
+                { id: "drone", label: "DRONES", emoji: "🤖" },
+                { id: "ground_vehicle", label: "GROUND", emoji: "🚒" },
+                { id: "other", label: "OTHER", emoji: "⚡" }
+              ].map((c) => {
+                const isActive = (selectedCategory || "all") === c.id || (c.id === "passenger" && selectedCategory === "commercial");
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedCategory(c.id)}
+                    className={`px-2.5 py-1.5 rounded-lg uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-extrabold flex items-center gap-1 ${
+                      isActive
+                        ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-black"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <span>{c.emoji}</span>
+                    <span>{c.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
 

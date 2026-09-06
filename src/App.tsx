@@ -59,11 +59,20 @@ import { AircraftCategory } from "./types";
 function createPlaneIcon(flight: any, rotation: number, isSelected: boolean) {
   const classification = getAircraftClassification(flight);
   const altColor = getAltitudeColor(flight.alt || 30000);
-  const size = isSelected ? Math.max(30, classification.selectedSize + 4) : classification.baseSize;
-  const isMilitary = flight.category === "military" || flight.aircraft_type === "F35" || flight.aircraft_type === "F22" || flight.aircraft_type === "EF2000" || flight.aircraft_type === "B2";
-  const isHelicopter = flight.category === "helicopter" || flight.aircraft_type === "H145" || flight.aircraft_type === "EC135" || flight.aircraft_type === "UH60" || flight.aircraft_type === "AH64";
-  const isCargo = flight.category === "cargo";
-  const isGA = flight.category === "general_aviation";
+  const size = isSelected ? Math.max(32, classification.selectedSize + 6) : classification.baseSize;
+  const cat = flight.category || "passenger";
+
+  const isMilitary = cat === "military" || flight.aircraft_type === "F35" || flight.aircraft_type === "F22" || flight.aircraft_type === "EF2000" || flight.aircraft_type === "B2";
+  const isHelicopter = cat === "helicopter" || flight.aircraft_type === "H145" || flight.aircraft_type === "EC135" || flight.aircraft_type === "UH60" || flight.aircraft_type === "AH64";
+  const isCargo = cat === "cargo";
+  const isBizJet = cat === "business_jet";
+  const isGA = cat === "general_aviation";
+  const isLighterThanAir = cat === "lighter_than_air";
+  const isGlider = cat === "glider";
+  const isDrone = cat === "drone";
+  const isGroundVehicle = cat === "ground_vehicle";
+  const isOther = cat === "other";
+  const isNonCategorized = cat === "non_categorized";
 
   const fillColor = isSelected 
     ? "#00f0ff" 
@@ -73,8 +82,22 @@ function createPlaneIcon(flight: any, rotation: number, isSelected: boolean) {
     ? "#10b981" 
     : isCargo 
     ? "#f59e0b" 
+    : isBizJet
+    ? "#38bdf8"
     : isGA 
-    ? "#a855f7" 
+    ? "#c084fc" 
+    : isLighterThanAir
+    ? "#0ea5e9"
+    : isGlider
+    ? "#14b8a6"
+    : isDrone
+    ? "#fb923c"
+    : isGroundVehicle
+    ? "#eab308"
+    : isOther
+    ? "#f97316"
+    : isNonCategorized
+    ? "#94a3b8"
     : altColor.hex;
 
   const strokeColor = isSelected ? "#ffffff" : "#07090e";
@@ -84,6 +107,10 @@ function createPlaneIcon(flight: any, rotation: number, isSelected: boolean) {
     ? "drop-shadow(0 0 8px rgba(244,63,94,0.9)) drop-shadow(0 0 2px rgba(0,0,0,0.9))"
     : isHelicopter
     ? "drop-shadow(0 0 8px rgba(16,185,129,0.9)) drop-shadow(0 0 2px rgba(0,0,0,0.9))"
+    : isDrone
+    ? "drop-shadow(0 0 8px rgba(251,146,60,0.9)) drop-shadow(0 0 2px rgba(0,0,0,0.9))"
+    : isGroundVehicle
+    ? "drop-shadow(0 0 8px rgba(234,179,8,0.9)) drop-shadow(0 0 2px rgba(0,0,0,0.9))"
     : `drop-shadow(0 0 5px ${altColor.hex}99) drop-shadow(0 0 2px rgba(0,0,0,0.9))`;
 
   let svgContent = "";
@@ -105,6 +132,55 @@ function createPlaneIcon(flight: any, rotation: number, isSelected: boolean) {
         <line x1="3" y1="11" x2="23" y2="11" stroke="#ffffff" stroke-width="1.2" opacity="0.8"/>
         <path d="M13 14 L13 25 L11 26 L15 26 Z"/>
         <line x1="10" y1="25" x2="16" y2="25" stroke="#ffffff" stroke-width="1"/>
+      </svg>
+    `;
+  } else if (isDrone) {
+    // Twin-Boom Surveillance & Combat UAV Drone Silhouette
+    svgContent = `
+      <svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="${fillColor}" stroke="${strokeColor}" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2 L16 10 L27 12 L27 14 L16 13 L16 22 L20 25 L18 26 L14 24 L10 26 L8 25 L12 22 L12 13 L1 14 L1 12 L12 10 Z"/>
+        <circle cx="14" cy="4" r="1.5" fill="#ffffff"/>
+      </svg>
+    `;
+  } else if (isGroundVehicle) {
+    // Airport Operations & Crash Fire Tender Vehicle Silhouette
+    svgContent = `
+      <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fillColor}" stroke="${strokeColor}" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="7" y="2" width="10" height="20" rx="3"/>
+        <rect x="9" y="5" width="6" height="4" rx="1" fill="#ffffff" opacity="0.8"/>
+        <circle cx="6" cy="7" r="1.8" fill="#ffffff"/>
+        <circle cx="18" cy="7" r="1.8" fill="#ffffff"/>
+        <circle cx="6" cy="17" r="1.8" fill="#ffffff"/>
+        <circle cx="18" cy="17" r="1.8" fill="#ffffff"/>
+      </svg>
+    `;
+  } else if (isLighterThanAir) {
+    // Aerodynamic Airship / Blimp / Balloon Silhouette
+    svgContent = `
+      <svg width="${size}" height="${size}" viewBox="0 0 26 26" fill="${fillColor}" stroke="${strokeColor}" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="13" cy="12" rx="7" ry="11"/>
+        <polygon points="13,23 9,26 17,26"/>
+        <rect x="11.5" y="14" width="3" height="5" rx="1" fill="#ffffff" opacity="0.8"/>
+      </svg>
+    `;
+  } else if (isGlider) {
+    // Ultra-High-Aspect Ratio Sailplane Silhouette
+    svgContent = `
+      <svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="${fillColor}" stroke="${strokeColor}" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 2 C15.2 2 14.8 5 14.8 14 L14.8 24 L12 27 L12 28.5 L16 27 L20 28.5 L20 27 L17.2 24 L17.2 14 C17.2 5 16.8 2 16 2 Z"/>
+        <path d="M14.8 12 L1 15.5 L1 17 L14.8 14.5 Z"/>
+        <path d="M17.2 12 L31 15.5 L31 17 L17.2 14.5 Z"/>
+      </svg>
+    `;
+  } else if (isBizJet) {
+    // Sleek Executive Business Jet Silhouette
+    svgContent = `
+      <svg width="${size}" height="${size}" viewBox="0 0 26 26" fill="${fillColor}" stroke="${strokeColor}" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 1 C12 1 11.2 4 11.2 10 L11.2 18 L8 21 L8 23 L13 21.5 L18 23 L18 21 L14.8 18 L14.8 10 C14.8 4 14 1 13 1 Z"/>
+        <path d="M11.2 10 L2 16 L2 17.5 L11.2 14 Z"/>
+        <path d="M14.8 10 L24 16 L24 17.5 L14.8 14 Z"/>
+        <rect x="10" y="15" width="1.5" height="3.5" rx="0.7" fill="#ffffff" opacity="0.8"/>
+        <rect x="14.5" y="15" width="1.5" height="3.5" rx="0.7" fill="#ffffff" opacity="0.8"/>
       </svg>
     `;
   } else if (classification.category === "4-engine" || isCargo) {
@@ -347,11 +423,11 @@ export default function App() {
 
       const matchAlt = minAltitudeFilter === 0 || f.alt >= minAltitudeFilter;
 
-      const matchCategory = selectedCategory === "all" || f.category === selectedCategory || (
-        selectedCategory === "military" && (f.category === "military" || f.aircraft_type === "F35" || f.aircraft_type === "F22" || f.aircraft_type === "EF2000" || f.aircraft_type === "B2")
-      ) || (
-        selectedCategory === "helicopter" && (f.category === "helicopter" || f.aircraft_type === "H145" || f.aircraft_type === "EC135" || f.aircraft_type === "UH60")
-      );
+      const matchCategory = selectedCategory === "all" || 
+        f.category === selectedCategory ||
+        ((selectedCategory === "passenger" || selectedCategory === "commercial") && (f.category === "passenger" || f.category === "commercial")) ||
+        (selectedCategory === "military" && (f.category === "military" || f.aircraft_type === "F35" || f.aircraft_type === "F22" || f.aircraft_type === "EF2000" || f.aircraft_type === "B2")) ||
+        (selectedCategory === "helicopter" && (f.category === "helicopter" || f.aircraft_type === "H145" || f.aircraft_type === "EC135" || f.aircraft_type === "UH60"));
 
       return matchSearch && matchStatus && matchAlt && matchCategory;
     });
@@ -421,7 +497,12 @@ export default function App() {
     
     let candidateFlights = flights;
     if (selectedCategory && selectedCategory !== "all") {
-      candidateFlights = candidateFlights.filter(f => f.category === selectedCategory);
+      candidateFlights = candidateFlights.filter(f => 
+        f.category === selectedCategory ||
+        ((selectedCategory === "passenger" || selectedCategory === "commercial") && (f.category === "passenger" || f.category === "commercial")) ||
+        (selectedCategory === "military" && (f.category === "military" || f.aircraft_type === "F35" || f.aircraft_type === "F22" || f.aircraft_type === "EF2000" || f.aircraft_type === "B2")) ||
+        (selectedCategory === "helicopter" && (f.category === "helicopter" || f.aircraft_type === "H145" || f.aircraft_type === "EC135" || f.aircraft_type === "UH60"))
+      );
     }
 
     if (mapBounds && mapRef.current.getZoom() > 4) {

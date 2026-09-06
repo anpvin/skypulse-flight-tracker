@@ -409,12 +409,30 @@ export function getAircraftModel(flight: any): string {
   if (flight.aircraft_model) return flight.aircraft_model;
   
   const type = String(flight.aircraft_type || "").toUpperCase().trim();
-  if (type && aircraftModelMap[type]) {
-    return aircraftModelMap[type].model;
+  if (type) {
+    if (aircraftModelMap[type]) return aircraftModelMap[type].model;
+    if (militaryAircraftMap[type]) return militaryAircraftMap[type].name;
+    if (helicopterAircraftMap[type]) return helicopterAircraftMap[type].name;
+    if (businessJetMap[type]) return businessJetMap[type].name;
+    if (generalAviationMap[type]) return generalAviationMap[type].name;
+    if (lighterThanAirMap[type]) return lighterThanAirMap[type].name;
+    if (gliderMap[type]) return gliderMap[type].name;
+    if (droneMap[type]) return droneMap[type].name;
+    if (groundVehicleMap[type]) return groundVehicleMap[type].name;
+    if (otherAircraftMap[type]) return otherAircraftMap[type].name;
+    return type;
   }
-  if (type) return type;
 
-  // Fallback deduction from speed & altitude
+  // Fallback deduction from speed & altitude & category
+  if (flight.category === "military") return "Lockheed Martin F-35 Lightning II";
+  if (flight.category === "helicopter") return "Airbus Helicopters H145";
+  if (flight.category === "business_jet") return "Gulfstream G650ER";
+  if (flight.category === "cargo") return "Boeing 777 Freighter";
+  if (flight.category === "lighter_than_air") return "Zeppelin NT Airship";
+  if (flight.category === "glider") return "Schleicher ASK 21 Glider";
+  if (flight.category === "drone") return "RQ-4 Global Hawk UAV";
+  if (flight.category === "ground_vehicle") return "Airport Operations Follow-Me Vehicle";
+
   const alt = flight.alt || 0;
   const speed = flight.speed || 0;
   if (alt > 38000 || speed > 900) return "Airbus A350 / Boeing 787";
@@ -853,6 +871,69 @@ export const cargoAirlines: Record<string, { name: string; callsign: string; hub
   SQC: { name: "Singapore Airlines Cargo", callsign: "SINGCARGO", hub: "SIN" },
   PAC: { name: "Polar Air Cargo", callsign: "POLAR", hub: "ANC" },
   CKK: { name: "China Cargo Airlines", callsign: "CARGO KING", hub: "PVG" }
+};
+
+// Business Jets Database
+export const businessJetMap: Record<string, { name: string; role: string; topSpeedMach: number; ceilingFt: number; manufacturer: string; rangeKm: number }> = {
+  G650: { name: "Gulfstream G650ER", role: "Ultra-Long-Range Executive Jet", topSpeedMach: 0.925, ceilingFt: 51000, manufacturer: "Gulfstream Aerospace", rangeKm: 13890 },
+  GL7T: { name: "Bombardier Global 7500", role: "Ultra-Long-Range Flagship Business Jet", topSpeedMach: 0.925, ceilingFt: 51000, manufacturer: "Bombardier", rangeKm: 14260 },
+  CL35: { name: "Bombardier Challenger 3500", role: "Super-Midsize Executive Jet", topSpeedMach: 0.83, ceilingFt: 45000, manufacturer: "Bombardier", rangeKm: 6297 },
+  C750: { name: "Cessna Citation X+", role: "High-Speed Transcontinental Bizjet", topSpeedMach: 0.935, ceilingFt: 51000, manufacturer: "Cessna / Textron", rangeKm: 6410 },
+  FA8X: { name: "Dassault Falcon 8X", role: "Trijet Ultra-Long-Range Executive", topSpeedMach: 0.90, ceilingFt: 51000, manufacturer: "Dassault Aviation", rangeKm: 11945 },
+  PC24: { name: "Pilatus PC-24 Super Versatile Jet", role: "Short-Field Rough-Strip Executive Jet", topSpeedMach: 0.75, ceilingFt: 45000, manufacturer: "Pilatus Aircraft", rangeKm: 3769 },
+  E55P: { name: "Embraer Phenom 300E", role: "Best-Selling Light Executive Jet", topSpeedMach: 0.80, ceilingFt: 45000, manufacturer: "Embraer Executive Jets", rangeKm: 3723 }
+};
+
+// General Aviation Database
+export const generalAviationMap: Record<string, { name: string; role: string; cruiseKnots: number; ceilingFt: number; manufacturer: string }> = {
+  C172: { name: "Cessna 172 Skyhawk", role: "Single-Engine Flight Training / Touring", cruiseKnots: 122, ceilingFt: 14000, manufacturer: "Cessna" },
+  SR22: { name: "Cirrus SR22T GTS", role: "High-Performance Single with Airframe Parachute", cruiseKnots: 213, ceilingFt: 25000, manufacturer: "Cirrus Aircraft" },
+  PA28: { name: "Piper PA-28 Cherokee", role: "Civil Light Trainer & Cross-Country", cruiseKnots: 115, ceilingFt: 14300, manufacturer: "Piper Aircraft" },
+  BE36: { name: "Beechcraft Bonanza G36", role: "High-Performance 6-Seat Touring", cruiseKnots: 176, ceilingFt: 18500, manufacturer: "Beechcraft" },
+  DA42: { name: "Diamond DA42 Twin Star", role: "Twin-Engine Diesel Cruiser / Multi-Engine Trainer", cruiseKnots: 162, ceilingFt: 18000, manufacturer: "Diamond Aircraft" },
+  M20T: { name: "Mooney M20 Acclaim Ultra", role: "Turbocharged High-Speed Piston Single", cruiseKnots: 242, ceilingFt: 26000, manufacturer: "Mooney Aviation" }
+};
+
+// Lighter-Than-Air (Airships / Blimps / Balloons) Database
+export const lighterThanAirMap: Record<string, { name: string; role: string; speedKnots: number; ceilingFt: number; manufacturer: string }> = {
+  BLMP: { name: "Goodyear Wingfoot One (NT)", role: "Semi-Rigid Aerial Broadcast Airship", speedKnots: 65, ceilingFt: 10000, manufacturer: "Zeppelin / Goodyear" },
+  ZEPN: { name: "Zeppelin NT-07", role: "Tourist & Atmospheric Research Airship", speedKnots: 70, ceilingFt: 8500, manufacturer: "Zeppelin Luftschifftechnik" },
+  BALN: { name: "Raven Stratospheric Research Balloon", role: "High-Altitude Zero-Pressure Scientific Balloon", speedKnots: 25, ceilingFt: 65000, manufacturer: "Raven Aerostar" },
+  HBAL: { name: "UltraMagic M-160 Hot Air Balloon", role: "Passenger Sightseeing Hot Air Balloon", speedKnots: 15, ceilingFt: 5000, manufacturer: "UltraMagic" }
+};
+
+// Gliders & Sailplanes Database
+export const gliderMap: Record<string, { name: string; role: string; glideRatio: string; maxKnots: number; manufacturer: string }> = {
+  ASK21: { name: "Schleicher ASK 21", role: "Two-Seat Composite Aerobatic Trainer Sailplane", glideRatio: "34:1", maxKnots: 151, manufacturer: "Alexander Schleicher" },
+  DISC: { name: "Schempp-Hirth Discus-2b", role: "Standard-Class High-Performance Sailplane", glideRatio: "42.5:1", maxKnots: 135, manufacturer: "Schempp-Hirth" },
+  DG10: { name: "DG Flugzeugbau DG-1000", role: "Two-Seat Club & Cross-Country Sailplane", glideRatio: "46.5:1", maxKnots: 146, manufacturer: "DG Aviation" },
+  AS33: { name: "Schleicher AS 33 Es", role: "18m Open/Racing-Class Self-Launching Sailplane", glideRatio: "56:1", maxKnots: 146, manufacturer: "Alexander Schleicher" }
+};
+
+// Drones & Unmanned Aerial Vehicles (UAVs) Database
+export const droneMap: Record<string, { name: string; role: string; topSpeedKnots: number; ceilingFt: number; manufacturer: string }> = {
+  RQ4: { name: "Northrop Grumman RQ-4 Global Hawk", role: "High-Altitude Long-Endurance (HALE) Strategic Reconnaissance UAV", topSpeedKnots: 340, ceilingFt: 60000, manufacturer: "Northrop Grumman" },
+  MQ9: { name: "General Atomics MQ-9 Reaper", role: "Remotely Piloted Combat & Persistent Surveillance RPAS", topSpeedKnots: 240, ceilingFt: 50000, manufacturer: "General Atomics" },
+  TB2: { name: "Baykar Bayraktar TB2", role: "Medium-Altitude Long-Endurance (MALE) Armed UAV", topSpeedKnots: 120, ceilingFt: 27000, manufacturer: "Baykar Defense" },
+  HM90: { name: "Elbit Systems Hermes 900", role: "Multi-Payload Tactical Surveillance UAV", topSpeedKnots: 140, ceilingFt: 30000, manufacturer: "Elbit Systems" },
+  WING: { name: "Wing Delivery Hummingbird Drone", role: "Autonomous Commercial Last-Mile Delivery Drone", topSpeedKnots: 65, ceilingFt: 400, manufacturer: "Wing (Alphabet)" }
+};
+
+// Ground Vehicles (Airport Operations / Emergency / Ramp) Database
+export const groundVehicleMap: Record<string, { name: string; role: string; topSpeedKmh: number; manufacturer: string }> = {
+  FLME: { name: "Airport Follow-Me Lead Vehicle", role: "Aircraft Ramp Marshalling & Runway Inspection", topSpeedKmh: 130, manufacturer: "Volkswagen / Ford Pro" },
+  FIRE: { name: "Rosenbauer Panther 8x8 ARFF", role: "Airport Crash Rescue Firefighting Crash Tender", topSpeedKmh: 140, manufacturer: "Rosenbauer" },
+  TUG: { name: "Goldhofer AST-2X Pushback Tug", role: "Towbarless Widebody Aircraft Pushback & Relocation", topSpeedKmh: 32, manufacturer: "Goldhofer Airport Technology" },
+  SWPR: { name: "Boschung Jetbroom 10000 Plus", role: "High-Speed Airport Runway Snow Clearance & Sweeper", topSpeedKmh: 80, manufacturer: "Boschung Group" },
+  FUEL: { name: "Titan Aviation Jet A-1 Hydrant Refueler", role: "Aircraft High-Capacity Apron Fuel Servicing", topSpeedKmh: 60, manufacturer: "Titan Aviation" }
+};
+
+// Other / Specialized / Vintage Aircraft Database
+export const otherAircraftMap: Record<string, { name: string; role: string; topSpeedKnots: number; ceilingFt: number; manufacturer: string }> = {
+  CL415: { name: "Canadair CL-415 Super Scooper", role: "Amphibious Aerial Firefighting Heavy Water Bomber", topSpeedKnots: 194, ceilingFt: 14700, manufacturer: "De Havilland / Bombardier" },
+  X15: { name: "North American X-15 (Experimental)", role: "Hypersonic Rocket-Powered Research Aircraft", topSpeedKnots: 3900, ceilingFt: 350000, manufacturer: "North American Aviation" },
+  SPIT: { name: "Supermarine Spitfire Mk.IX", role: "Historic WWII Fighter Warbird", topSpeedKnots: 355, ceilingFt: 43000, manufacturer: "Supermarine" },
+  P51: { name: "North American P-51D Mustang", role: "Historic Long-Range WWII Escort Fighter Warbird", topSpeedKnots: 380, ceilingFt: 41900, manufacturer: "North American Aviation" }
 };
 
 // Military Operators

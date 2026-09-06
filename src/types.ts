@@ -1,4 +1,18 @@
-export type AircraftCategory = "commercial" | "military" | "helicopter" | "cargo" | "general_aviation";
+export type AircraftCategory = 
+  | "all"
+  | "passenger" 
+  | "cargo" 
+  | "military" 
+  | "business_jet" 
+  | "general_aviation" 
+  | "helicopter" 
+  | "lighter_than_air" 
+  | "glider" 
+  | "drone" 
+  | "ground_vehicle" 
+  | "other" 
+  | "non_categorized"
+  | "commercial"; // alias for passenger
 
 export interface Flight {
   hex: string;

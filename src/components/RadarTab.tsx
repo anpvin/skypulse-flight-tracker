@@ -149,57 +149,37 @@ export function RadarTab({
 
       {/* Top Center: Flightradar24 Aircraft Category Filter Pills */}
       {setSelectedCategory && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-1.5 p-1 bg-slate-950/80 border border-slate-800 rounded-2xl backdrop-blur-xl shadow-2xl font-mono text-[10px]">
-          <button
-            onClick={() => setSelectedCategory("all")}
-            className={`px-3 py-1.5 rounded-xl font-black transition-all cursor-pointer ${
-              selectedCategory === "all" ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            ALL ({flights.length})
-          </button>
-          <button
-            onClick={() => setSelectedCategory("commercial")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-              selectedCategory === "commercial" ? "bg-blue-600 text-white shadow-md shadow-blue-500/30" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            COMMERCIAL
-          </button>
-          <button
-            onClick={() => setSelectedCategory("military")}
-            className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 transition-all cursor-pointer ${
-              selectedCategory === "military" ? "bg-rose-600 text-white shadow-md shadow-rose-500/30" : "text-rose-400 hover:text-rose-300"
-            }`}
-          >
-            <ShieldAlert className="w-3 h-3" />
-            MILITARY ({militaryCount})
-          </button>
-          <button
-            onClick={() => setSelectedCategory("helicopter")}
-            className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 transition-all cursor-pointer ${
-              selectedCategory === "helicopter" ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/30" : "text-emerald-400 hover:text-emerald-300"
-            }`}
-          >
-            <Activity className="w-3 h-3" />
-            HELIS ({heliCount})
-          </button>
-          <button
-            onClick={() => setSelectedCategory("cargo")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-              selectedCategory === "cargo" ? "bg-amber-600 text-white shadow-md shadow-amber-500/30" : "text-amber-400 hover:text-amber-300"
-            }`}
-          >
-            CARGO ({cargoCount})
-          </button>
-          <button
-            onClick={() => setSelectedCategory("general_aviation")}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-              selectedCategory === "general_aviation" ? "bg-purple-600 text-white shadow-md shadow-purple-500/30" : "text-purple-400 hover:text-purple-300"
-            }`}
-          >
-            VIP GA ({gaCount})
-          </button>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-1 p-1 bg-slate-950/85 border border-slate-800 rounded-2xl backdrop-blur-xl shadow-2xl font-mono text-[10px] max-w-[85vw] overflow-x-auto scrollbar-none">
+          {[
+            { id: "all", label: "ALL", emoji: "🌐" },
+            { id: "passenger", label: "PASSENGER", emoji: "✈️" },
+            { id: "cargo", label: "CARGO", emoji: "📦" },
+            { id: "military", label: "MILITARY", emoji: "⚔️" },
+            { id: "business_jet", label: "BIZ JETS", emoji: "💼" },
+            { id: "general_aviation", label: "GA", emoji: "🛩️" },
+            { id: "helicopter", label: "HELIS", emoji: "🚁" },
+            { id: "lighter_than_air", label: "AIRSHIPS", emoji: "🎈" },
+            { id: "glider", label: "GLIDERS", emoji: "🪂" },
+            { id: "drone", label: "DRONES", emoji: "🤖" },
+            { id: "ground_vehicle", label: "GROUND", emoji: "🚒" },
+            { id: "other", label: "OTHER", emoji: "⚡" }
+          ].map((catItem) => {
+            const isCatActive = selectedCategory === catItem.id || (catItem.id === "passenger" && selectedCategory === "commercial");
+            return (
+              <button
+                key={catItem.id}
+                onClick={() => setSelectedCategory(catItem.id as any)}
+                className={`px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap ${
+                  isCatActive
+                    ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30 font-black"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <span>{catItem.emoji}</span>
+                <span>{catItem.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
