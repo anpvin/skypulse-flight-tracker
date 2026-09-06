@@ -1,0 +1,6 @@
+{
+  "name": "Global Flight Radar",
+  "description": "Real-time global aviation dashboard featuring interactive radar maps, weather layers, AI-assisted flight copilot chat, live airport terminal boards, traffic analytics, and an offline trip planner.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
